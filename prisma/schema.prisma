@@ -1,0 +1,127 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  surname   String?
+  firstname String?
+  avatar    String?
+  password  String
+  role      UserRole @default(Student)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Application {
+  id                      String   @id @default(cuid())
+  
+  // Personal Information
+  email                   String
+  firstname               String
+  surname                 String
+  middlename              String?
+  dateOfBirth             String
+  gender                  String
+  nationality             String
+  phoneNumber             String
+  alternatePhone          String?
+  address                 String
+  city                    String
+  state                   String
+  country                 String
+  postalCode              String?
+  avatar                  String?
+  
+  // Next of Kin
+  kinFirstname            String
+  kinSurname              String
+  kinRelationship         String
+  kinPhone                String
+  kinEmail                String
+  kinAddress              String
+  
+  // Program Selection
+  programType             String
+  programChoice           String
+  admissionSession        String
+  modeOfStudy             String
+  
+  // Educational Background
+  previousDegree          String
+  previousInstitution     String
+  previousGraduationYear  String
+  previousGPA             String
+  previousFieldOfStudy    String
+  transcriptFile          String?
+  certificateFile         String?
+  
+  // Employment Details
+  employmentStatus        String
+  currentEmployer         String?
+  jobTitle                String?
+  employmentStartDate     String?
+  employmentEndDate       String?
+  reasonForPursuing       String
+  
+  // Research Proposal
+  researchTitle           String?
+  researchAbstract        String?
+  researchObjectives      String?
+  researchMethodology     String?
+  proposalFile            String?
+  
+  // Recommendations
+  referee1Name            String
+  referee1Email           String
+  referee1Phone           String
+  referee1Institution     String
+  referee2Name            String
+  referee2Email           String
+  referee2Phone           String
+  referee2Institution     String
+  
+  // Payment
+  paymentMethod           String
+  paymentReference        String
+  paymentProof            String?
+  
+  // Application Status
+  status                  ApplicationStatus @default(PENDING)
+  applicationNumber       String?          @unique
+  
+  createdAt               DateTime          @default(now())
+  updatedAt               DateTime          @updatedAt
+
+  @@map("applications")
+}
+
+enum ApplicationStatus {
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  AWAITING_PAYMENT
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  Center_Leader
+  Deputy_Center_Leader
+  Academic_Program_Coordinator
+  Head_of_Program
+  Lecturer
+  Student
+  Applicant
+  Staff
+  Head_of_Finance
+  Industrial_Liaison_Officer
+}
