@@ -75,8 +75,8 @@ export default function Navbar() {
   ];
 
   const coursesDropdown = [
-    { name: 'A to Z Courses', href: '#courses-az' },
-    { name: 'Programs', href: '#programs' },
+    { name: 'All Programs', href: '/programs', onClick: () => router.push('/programs') },
+    { name: 'A to Z Courses', href: '/courses/all', onClick: () => router.push('/courses/all') },
   ];
 
   return (
@@ -181,13 +181,29 @@ export default function Navbar() {
               {isCoursesOpen && (
                 <div className="absolute top-full left-0 mt-0 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 animate-in fade-in slide-in-from-top-2 duration-200">
                   {coursesDropdown.map((item) => (
-                    <a
-                      key={item.name}
-                      href={item.href}
-                      className="block px-4 py-3 text-gray-700 hover:bg-gray-100 transition-colors"
-                    >
-                      {item.name}
-                    </a>
+                    item.onClick ? (
+                      <button
+                        key={item.name}
+                        onClick={() => {
+                          item.onClick();
+                          if (coursesTimeoutRef.current) {
+                            clearTimeout(coursesTimeoutRef.current);
+                          }
+                          setIsCoursesOpen(false);
+                        }}
+                        className="w-full text-left block px-4 py-3 text-gray-700 hover:bg-gray-100 transition-colors"
+                      >
+                        {item.name}
+                      </button>
+                    ) : (
+                      <a
+                        key={item.name}
+                        href={item.href}
+                        className="block px-4 py-3 text-gray-700 hover:bg-gray-100 transition-colors"
+                      >
+                        {item.name}
+                      </a>
+                    )
                   ))}
                 </div>
               )}
@@ -308,17 +324,31 @@ export default function Navbar() {
                 {isMobileCoursesOpen && (
                   <div className="mt-2 ml-4 space-y-2">
                     {coursesDropdown.map((item) => (
-                      <a
-                        key={item.name}
-                        href={item.href}
-                        className="block px-4 py-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
-                        onClick={() => {
-                          setIsOpen(false);
-                          setIsMobileCoursesOpen(false);
-                        }}
-                      >
-                        {item.name}
-                      </a>
+                      item.onClick ? (
+                        <button
+                          key={item.name}
+                          onClick={() => {
+                            item.onClick();
+                            setIsOpen(false);
+                            setIsMobileCoursesOpen(false);
+                          }}
+                          className="w-full text-left block px-4 py-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+                        >
+                          {item.name}
+                        </button>
+                      ) : (
+                        <a
+                          key={item.name}
+                          href={item.href}
+                          className="block px-4 py-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+                          onClick={() => {
+                            setIsOpen(false);
+                            setIsMobileCoursesOpen(false);
+                          }}
+                        >
+                          {item.name}
+                        </a>
+                      )
                     ))}
                   </div>
                 )}

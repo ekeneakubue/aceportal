@@ -60,68 +60,37 @@ export default function Home() {
 
   const programs = [
     {
-      icon: GraduationCap,
-      title: 'Engineering & Technology',
-      description: 'Cutting-edge programs in Computer Science, AI, Robotics, and Sustainable Energy.',
-      courses: 45,
-      color: 'from-blue-500 to-cyan-500',
+      icon: GraduationCap,      
+      title: 'ACE-SPED M.Eng/M.Sc and Ph.D. Programs',
+      description: 'ACE-SPED Impactful Educational Research and Development Programs',
+      courses: 9,
+      color: 'from-green-500 to-emerald-500',
+      slug: 'ace-sped-graduate-programs',
     },
     {
       icon: Microscope,
-      title: 'Health Sciences',
-      description: 'Comprehensive medical, nursing, and public health programs with clinical excellence.',
-      courses: 38,
-      color: 'from-green-500 to-emerald-500',
-    },
-    {
-      icon: Briefcase,
-      title: 'Business & Management',
-      description: 'MBA, Finance, Marketing, and Entrepreneurship programs for future leaders.',
-      courses: 52,
-      color: 'from-purple-500 to-pink-500',
-    },
+      title: 'ACE-SPED  Innovation, Vocational & Entrepreneurship Training (IVET-HUB)',
+      description: 'Web Development | Data Analysis | Cyber Security and More...',
+      courses: 10,
+      color: 'from-blue-500 to-cyan-500',
+      slug: 'ace-sped-ivet-hub',
+    },    
     {
       icon: Lightbulb,
-      title: 'Arts & Humanities',
-      description: 'Creative arts, literature, philosophy, and cultural studies programs.',
-      courses: 41,
-      color: 'from-orange-500 to-red-500',
-    },
-    {
-      icon: GraduationCap,
-      title: 'Engineering & Technology',
-      description: 'Cutting-edge programs in Computer Science, AI, Robotics, and Sustainable Energy.',
-      courses: 45,
-      color: 'from-blue-500 to-cyan-500',
-    },
-    {
-      icon: Microscope,
-      title: 'Health Sciences',
-      description: 'Comprehensive medical, nursing, and public health programs with clinical excellence.',
-      courses: 38,
-      color: 'from-green-500 to-emerald-500',
-    },
-    {
-      icon: Briefcase,
-      title: 'Business & Management',
-      description: 'MBA, Finance, Marketing, and Entrepreneurship programs for future leaders.',
-      courses: 52,
+      title: 'ACE-SPED C-Code Studio',
+      description: 'Video Editing | Podcast Production | Content Creation and More...',
+      courses: 5,
       color: 'from-purple-500 to-pink-500',
+      slug: 'ace-sped-c-code-studio',
     },
     {
-      icon: Lightbulb,
-      title: 'Arts & Humanities',
-      description: 'Creative arts, literature, philosophy, and cultural studies programs.',
-      courses: 41,
+      icon: Briefcase,      
+      title: 'Sales & Repairs of Gadgets',
+      description: 'Laptop Repair | Printers Repair | Computer Accessories and More...',
+      courses: 4,
       color: 'from-orange-500 to-red-500',
-    },
-    {
-      icon: GraduationCap,
-      title: 'Engineering & Technology',
-      description: 'Cutting-edge programs in Computer Science, AI, Robotics, and Sustainable Energy.',
-      courses: 45,
-      color: 'from-blue-500 to-cyan-500',
-    },
+      slug: 'sales-repairs-gadgets',
+    },    
   ];
 
   const stats = [
@@ -351,7 +320,10 @@ export default function Home() {
                       <span className="text-sm text-gray-500 dark:text-gray-500">
                         {program.courses} courses available
                       </span>
-                      <button className="text-green-600 dark:text-green-400 font-semibold flex items-center group-hover:gap-2 transition-all">
+                      <button 
+                        onClick={() => router.push(`/programs/${program.slug}`)}
+                        className="text-green-600 dark:text-green-400 font-semibold flex items-center group-hover:gap-2 transition-all"
+                      >
                         Explore
                         <ArrowRight className="ml-1 h-4 w-4 group-hover:translate-x-1 transition-transform" />
                       </button>
