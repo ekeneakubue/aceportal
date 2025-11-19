@@ -6,13 +6,14 @@ const prisma = new PrismaClient();
 // GET single course by ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // TODO: Add authentication check for SUPER_ADMIN or Center_Leader role
     
+    const { id } = await params;
     const course = await prisma.course.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         program: {
           select: {
@@ -47,11 +48,12 @@ export async function GET(
 // PUT update course
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // TODO: Add authentication check for SUPER_ADMIN or Center_Leader role
     
+    const { id } = await params;
     const body = await request.json();
     const {
       title,
@@ -71,7 +73,7 @@ export async function PUT(
 
     // Check if course exists
     const existingCourse = await prisma.course.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!existingCourse) {
@@ -111,7 +113,7 @@ export async function PUT(
 
     // Update course
     const course = await prisma.course.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...(title && { title }),
         ...(slug && { slug }),
@@ -187,13 +189,14 @@ export async function PUT(
 // DELETE course
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // TODO: Add authentication check for SUPER_ADMIN or Center_Leader role
     
+    const { id } = await params;
     const course = await prisma.course.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!course) {
@@ -207,7 +210,7 @@ export async function DELETE(
 
     // Delete course
     await prisma.course.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     // Update program's totalCourses count

@@ -6,13 +6,14 @@ const prisma = new PrismaClient();
 // GET single news by ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // TODO: Add authentication check for Center_Leader role
     
+    const { id } = await params;
     const news = await prisma.news.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!news) {
@@ -38,11 +39,12 @@ export async function GET(
 // PUT update news
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // TODO: Add authentication check for Center_Leader role
     
+    const { id } = await params;
     const body = await request.json();
     const {
       title,
@@ -60,7 +62,7 @@ export async function PUT(
 
     // Check if news exists
     const existingNews = await prisma.news.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!existingNews) {
@@ -86,7 +88,7 @@ export async function PUT(
 
     // Update news
     const news = await prisma.news.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...(title && { title }),
         ...(slug && { slug }),
@@ -123,13 +125,14 @@ export async function PUT(
 // DELETE news
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // TODO: Add authentication check for Center_Leader role
     
+    const { id } = await params;
     const news = await prisma.news.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!news) {
@@ -141,7 +144,7 @@ export async function DELETE(
 
     // Delete news
     await prisma.news.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({

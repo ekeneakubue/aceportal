@@ -6,13 +6,14 @@ const prisma = new PrismaClient();
 // GET single program by ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // TODO: Add authentication check for SUPER_ADMIN or Center_Leader role
     
+    const { id } = await params;
     const program = await prisma.program.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         courses: true,
       },
@@ -41,11 +42,12 @@ export async function GET(
 // PUT update program
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // TODO: Add authentication check for SUPER_ADMIN or Center_Leader role
     
+    const { id } = await params;
     const body = await request.json();
     const {
       title,
@@ -67,7 +69,7 @@ export async function PUT(
 
     // Check if program exists
     const existingProgram = await prisma.program.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!existingProgram) {
@@ -93,12 +95,12 @@ export async function PUT(
 
     // Count courses for totalCourses
     const courseCount = await prisma.course.count({
-      where: { programId: params.id },
+      where: { programId: id },
     });
 
     // Update program
     const program = await prisma.program.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...(title && { title }),
         ...(slug && { slug }),
@@ -143,13 +145,14 @@ export async function PUT(
 // DELETE program
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // TODO: Add authentication check for SUPER_ADMIN or Center_Leader role
     
+    const { id } = await params;
     const program = await prisma.program.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         courses: true,
       },
@@ -164,7 +167,7 @@ export async function DELETE(
 
     // Delete program (courses will be cascade deleted)
     await prisma.program.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({
