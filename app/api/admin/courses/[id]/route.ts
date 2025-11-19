@@ -6,12 +6,12 @@ const prisma = new PrismaClient();
 // GET single course by ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     // TODO: Add authentication check for SUPER_ADMIN or Center_Leader role
     
-    const { id } = await params;
+    const { id } = await context.params;
     const course = await prisma.course.findUnique({
       where: { id },
       include: {
@@ -48,12 +48,12 @@ export async function GET(
 // PUT update course
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     // TODO: Add authentication check for SUPER_ADMIN or Center_Leader role
     
-    const { id } = await params;
+    const { id } = await context.params;
     const body = await request.json();
     const {
       title,
@@ -189,12 +189,12 @@ export async function PUT(
 // DELETE course
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     // TODO: Add authentication check for SUPER_ADMIN or Center_Leader role
     
-    const { id } = await params;
+    const { id } = await context.params;
     const course = await prisma.course.findUnique({
       where: { id },
     });
