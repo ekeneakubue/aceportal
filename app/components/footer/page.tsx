@@ -5,10 +5,10 @@ import Link from 'next/link';
 
 export default function Footer() {
   const quickLinks = [
-    { name: 'About Us', href: '#about' },
+    { name: 'About Us', href: '/about' },
     { name: 'Programs', href: '#programs' },
     { name: 'Admissions', href: '#admissions' },
-    { name: 'Research', href: '#research' },
+    { name: 'Research', href: '/research' },
     { name: 'Campus Life', href: '#campus' },
     { name: 'Alumni', href: '#alumni' },
   ];

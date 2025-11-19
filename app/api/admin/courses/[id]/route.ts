@@ -1,0 +1,239 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
+
+// GET single course by ID
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    // TODO: Add authentication check for SUPER_ADMIN or Center_Leader role
+    
+    const course = await prisma.course.findUnique({
+      where: { id: params.id },
+      include: {
+        program: {
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+          },
+        },
+      },
+    });
+
+    if (!course) {
+      return NextResponse.json(
+        { success: false, message: 'Course not found' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      course,
+    });
+  } catch (error) {
+    console.error('Error fetching course:', error);
+    return NextResponse.json(
+      { success: false, message: 'Failed to fetch course' },
+      { status: 500 }
+    );
+  }
+}
+
+// PUT update course
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    // TODO: Add authentication check for SUPER_ADMIN or Center_Leader role
+    
+    const body = await request.json();
+    const {
+      title,
+      slug,
+      programId,
+      level,
+      duration,
+      studyMode,
+      fee,
+      overview,
+      objectives,
+      curriculum,
+      requirements,
+      careerPaths,
+      isActive,
+    } = body;
+
+    // Check if course exists
+    const existingCourse = await prisma.course.findUnique({
+      where: { id: params.id },
+    });
+
+    if (!existingCourse) {
+      return NextResponse.json(
+        { success: false, message: 'Course not found' },
+        { status: 404 }
+      );
+    }
+
+    // If slug is being changed, check if new slug already exists
+    if (slug && slug !== existingCourse.slug) {
+      const slugExists = await prisma.course.findUnique({
+        where: { slug },
+      });
+
+      if (slugExists) {
+        return NextResponse.json(
+          { success: false, message: 'Course with this slug already exists' },
+          { status: 400 }
+        );
+      }
+    }
+
+    // If programId is being changed, verify new program exists
+    if (programId && programId !== existingCourse.programId) {
+      const program = await prisma.program.findUnique({
+        where: { id: programId },
+      });
+
+      if (!program) {
+        return NextResponse.json(
+          { success: false, message: 'Program not found' },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Update course
+    const course = await prisma.course.update({
+      where: { id: params.id },
+      data: {
+        ...(title && { title }),
+        ...(slug && { slug }),
+        ...(programId && { programId }),
+        ...(level && { level }),
+        ...(duration !== undefined && { duration: duration || null }),
+        ...(studyMode !== undefined && { studyMode: studyMode || null }),
+        ...(fee !== undefined && { fee: fee || null }),
+        ...(overview && { overview }),
+        ...(objectives !== undefined && { objectives }),
+        ...(curriculum !== undefined && { curriculum }),
+        ...(requirements !== undefined && { requirements }),
+        ...(careerPaths !== undefined && { careerPaths }),
+        ...(isActive !== undefined && { isActive }),
+      },
+      include: {
+        program: {
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+          },
+        },
+      },
+    });
+
+    // Update program's totalCourses count for both old and new programs
+    if (programId && programId !== existingCourse.programId) {
+      const oldProgramCount = await prisma.course.count({
+        where: { programId: existingCourse.programId },
+      });
+      await prisma.program.update({
+        where: { id: existingCourse.programId },
+        data: { totalCourses: oldProgramCount },
+      });
+
+      const newProgramCount = await prisma.course.count({
+        where: { programId },
+      });
+      await prisma.program.update({
+        where: { id: programId },
+        data: { totalCourses: newProgramCount },
+      });
+    } else {
+      const programIdToUpdate = programId || existingCourse.programId;
+      const courseCount = await prisma.course.count({
+        where: { programId: programIdToUpdate },
+      });
+      await prisma.program.update({
+        where: { id: programIdToUpdate },
+        data: { totalCourses: courseCount },
+      });
+    }
+
+    return NextResponse.json({
+      success: true,
+      course,
+      message: 'Course updated successfully',
+    });
+  } catch (error: any) {
+    console.error('Error updating course:', error);
+    return NextResponse.json(
+      { 
+        success: false, 
+        message: 'Failed to update course',
+        error: error.message || 'Unknown error'
+      },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE course
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    // TODO: Add authentication check for SUPER_ADMIN or Center_Leader role
+    
+    const course = await prisma.course.findUnique({
+      where: { id: params.id },
+    });
+
+    if (!course) {
+      return NextResponse.json(
+        { success: false, message: 'Course not found' },
+        { status: 404 }
+      );
+    }
+
+    const programId = course.programId;
+
+    // Delete course
+    await prisma.course.delete({
+      where: { id: params.id },
+    });
+
+    // Update program's totalCourses count
+    const courseCount = await prisma.course.count({
+      where: { programId },
+    });
+
+    await prisma.program.update({
+      where: { id: programId },
+      data: { totalCourses: courseCount },
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: 'Course deleted successfully',
+    });
+  } catch (error: any) {
+    console.error('Error deleting course:', error);
+    return NextResponse.json(
+      { 
+        success: false, 
+        message: 'Failed to delete course',
+        error: error.message || 'Unknown error'
+      },
+      { status: 500 }
+    );
+  }
+}
+

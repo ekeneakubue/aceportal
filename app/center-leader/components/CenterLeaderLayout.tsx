@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { 
   LayoutDashboard, Users, Settings, FileText, 
   Activity, LogOut, Menu, X, ChevronDown,
-  Bell, Search, User, Shield, UserPlus
+  Bell, Search, User, Shield, UserPlus, BookOpen, GraduationCap, Newspaper, UserCircle
 } from 'lucide-react';
 
 interface CenterLeaderLayoutProps {
@@ -20,7 +20,12 @@ export default function CenterLeaderLayout({ children }: CenterLeaderLayoutProps
   const navigation = [
     { name: 'Dashboard', href: '/center-leader', icon: LayoutDashboard },
     { name: 'User Management', href: '/center-leader/users', icon: Users },
+    { name: 'Role Management', href: '/center-leader/roles', icon: Shield },
     { name: 'Manage Applicants', href: '/center-leader/applicants', icon: UserPlus },
+    { name: 'Manage Programs', href: '/center-leader/programs', icon: BookOpen },
+    { name: 'Manage Courses', href: '/center-leader/courses', icon: GraduationCap },
+    { name: 'Manage News', href: '/center-leader/news', icon: Newspaper },
+    { name: 'Manage Team', href: '/center-leader/team', icon: UserCircle },
     { name: 'Activity Logs', href: '/center-leader/logs', icon: Activity },
     { name: 'Reports', href: '/center-leader/reports', icon: FileText },
     { name: 'Settings', href: '/center-leader/settings', icon: Settings },
@@ -37,9 +42,9 @@ export default function CenterLeaderLayout({ children }: CenterLeaderLayoutProps
         <div className="h-full flex flex-col">
           {/* Logo */}
           <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-            <div className="flex items-center">
-              <div className="h-10 w-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
-                <Shield className="h-6 w-6 text-white" />
+            <Link href="/" className="flex items-center">
+              <div className="relative">
+                <img src="/images/ace-logo.png" alt="ACE-SPED" className="h-10 w-10" />
               </div>
               <div className="ml-3">
                 <h1 className="text-lg font-bold text-gray-900 dark:text-white">
@@ -47,7 +52,7 @@ export default function CenterLeaderLayout({ children }: CenterLeaderLayoutProps
                 </h1>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Center Leader</p>
               </div>
-            </div>
+            </Link>
           </div>
 
           {/* Navigation */}

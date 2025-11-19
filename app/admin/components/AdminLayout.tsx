@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { 
   LayoutDashboard, Users, Shield, Settings, FileText, 
   Activity, Database, LogOut, Menu, X, ChevronDown,
-  Bell, Search, User, UserPlus
+  Bell, Search, User, UserPlus, BookOpen, GraduationCap, Newspaper, UserCircle
 } from 'lucide-react';
 
 interface AdminLayoutProps {
@@ -21,6 +21,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
     { name: 'User Management', href: '/admin/users', icon: Users },
     { name: 'Manage Applicants', href: '/admin/applicants', icon: UserPlus },
+    { name: 'Manage Programs', href: '/admin/programs', icon: BookOpen },
+    { name: 'Manage Courses', href: '/admin/courses', icon: GraduationCap },
+    { name: 'Manage News', href: '/admin/news', icon: Newspaper },
+    { name: 'Manage Team', href: '/admin/team', icon: UserCircle },
     { name: 'Role Management', href: '/admin/roles', icon: Shield },
     { name: 'Activity Logs', href: '/admin/logs', icon: Activity },
     { name: 'System Settings', href: '/admin/settings', icon: Settings },
@@ -39,9 +43,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         <div className="h-full flex flex-col">
           {/* Logo */}
           <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-            <div className="flex items-center">
-              <div className="h-10 w-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
-                <Shield className="h-6 w-6 text-white" />
+            <Link href="/" className="flex items-center">
+              <div className="relative">
+                <img src="/images/ace-logo.png" alt="ACE-SPED" className="h-10 w-10" />
               </div>
               <div className="ml-3">
                 <h1 className="text-lg font-bold text-gray-900 dark:text-white">
@@ -49,7 +53,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 </h1>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Super Admin</p>
               </div>
-            </div>
+            </Link>
           </div>
 
           {/* Navigation */}

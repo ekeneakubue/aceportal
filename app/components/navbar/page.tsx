@@ -14,10 +14,13 @@ export default function Navbar() {
   const [isMobileCoursesOpen, setIsMobileCoursesOpen] = useState(false);
   const [isAdmissionOpen, setIsAdmissionOpen] = useState(false);
   const [isMobileAdmissionOpen, setIsMobileAdmissionOpen] = useState(false);
+  const [isAboutOpen, setIsAboutOpen] = useState(false);
+  const [isMobileAboutOpen, setIsMobileAboutOpen] = useState(false);
   
   // Refs for timeout management
   const admissionTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
   const coursesTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+  const aboutTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -29,6 +32,7 @@ export default function Navbar() {
       // Cleanup timeouts on unmount
       if (admissionTimeoutRef.current) clearTimeout(admissionTimeoutRef.current);
       if (coursesTimeoutRef.current) clearTimeout(coursesTimeoutRef.current);
+      if (aboutTimeoutRef.current) clearTimeout(aboutTimeoutRef.current);
     };
   }, []);
 
@@ -60,13 +64,25 @@ export default function Navbar() {
     }, 200); // 200ms delay before closing
   };
 
-  const navLinksBeforeAdmission = [
-    { name: 'About', href: '#about', icon: FaUsers },
-  ];
+  // Handle about dropdown with delay
+  const handleAboutMouseEnter = () => {
+    if (aboutTimeoutRef.current) {
+      clearTimeout(aboutTimeoutRef.current);
+    }
+    setIsAboutOpen(true);
+  };
+
+  const handleAboutMouseLeave = () => {
+    aboutTimeoutRef.current = setTimeout(() => {
+      setIsAboutOpen(false);
+    }, 200); // 200ms delay before closing
+  };
+
+  const navLinksBeforeAdmission: any[] = [];
 
   const navLinksAfterCourses = [
-    { name: 'Research', href: '#research', icon: FaSearch },
-    { name: 'News', href: '#news', icon: FaRegNewspaper },    
+    { name: 'Research', href: '/research', icon: FaSearch },
+    { name: 'News', href: '/news', icon: FaRegNewspaper },    
   ];
 
   const admissionDropdown = [
@@ -77,6 +93,13 @@ export default function Navbar() {
   const coursesDropdown = [
     { name: 'All Programs', href: '/programs', onClick: () => router.push('/programs') },
     { name: 'A to Z Courses', href: '/courses/all', onClick: () => router.push('/courses/all') },
+  ];
+
+  const aboutDropdown = [
+    { name: 'About Us', href: '/about', onClick: () => router.push('/about') },
+    { name: 'Ace-SPED Laboratories', href: '/about/laboratories', onClick: () => router.push('/about/laboratories') },
+    { name: 'DLIs', href: '/about/dis', onClick: () => router.push('/about/dis') },
+    { name: 'Our Team', href: '/about/team', onClick: () => router.push('/about/team') },
   ];
 
   return (
@@ -106,20 +129,49 @@ export default function Navbar() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-1">
-            {/* Links Before Admission */}
-            {navLinksBeforeAdmission.map((link) => {
-              const Icon = link.icon;
-              return (
-                <a
-                  key={link.name}
-                  href={link.href}
-                  className="flex items-center space-x-2 px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors group"
-                >
-                  <Icon className="h-4 w-4 group-hover:scale-110 transition-transform" />
-                  <span className="font-medium">{link.name}</span>
-                </a>
-              );
-            })}
+            {/* About Dropdown */}
+            <div 
+              className="relative"
+              onMouseEnter={handleAboutMouseEnter}
+              onMouseLeave={handleAboutMouseLeave}
+            >
+              <button className="flex items-center space-x-2 px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors group">
+                <FaUsers className="h-4 w-4 group-hover:scale-110 transition-transform" />
+                <span className="font-medium">About</span>
+                <ChevronDown className={`h-4 w-4 transition-transform ${isAboutOpen ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {/* Dropdown Menu */}
+              {isAboutOpen && (
+                <div className="absolute top-full left-0 mt-0 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                  {aboutDropdown.map((item) => (
+                    item.onClick ? (
+                      <button
+                        key={item.name}
+                        onClick={() => {
+                          item.onClick();
+                          if (aboutTimeoutRef.current) {
+                            clearTimeout(aboutTimeoutRef.current);
+                          }
+                          setIsAboutOpen(false);
+                        }}
+                        className="w-full text-left block px-4 py-3 text-gray-700 hover:bg-gray-100 transition-colors"
+                      >
+                        {item.name}
+                      </button>
+                    ) : (
+                      <a
+                        key={item.name}
+                        href={item.href}
+                        className="block px-4 py-3 text-gray-700 hover:bg-gray-100 transition-colors"
+                      >
+                        {item.name}
+                      </a>
+                    )
+                  ))}
+                </div>
+              )}
+            </div>
             
             {/* Admission Dropdown */}
             <div 
@@ -212,6 +264,18 @@ export default function Navbar() {
             {/* Links After Courses */}
             {navLinksAfterCourses.map((link) => {
               const Icon = link.icon;
+              if (link.href.startsWith('/')) {
+                return (
+                  <Link
+                    key={link.name}
+                    href={link.href}
+                    className="flex items-center space-x-2 px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors group"
+                  >
+                    <Icon className="h-4 w-4 group-hover:scale-110 transition-transform" />
+                    <span className="font-medium">{link.name}</span>
+                  </Link>
+                );
+              }
               return (
                 <a
                   key={link.name}
@@ -246,21 +310,51 @@ export default function Navbar() {
         {isOpen && (
           <div className="md:hidden absolute top-20 left-0 right-0 bg-white shadow-lg border-t border-gray-200">
             <div className="px-4 py-6 space-y-3">
-              {/* Links Before Admission */}
-              {navLinksBeforeAdmission.map((link) => {
-                const Icon = link.icon;
-                return (
-                  <a
-                    key={link.name}
-                    href={link.href}
-                    className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    <Icon className="h-5 w-5" />
-                    <span className="font-medium">{link.name}</span>
-                  </a>
-                );
-              })}
+              {/* Mobile About Dropdown */}
+              <div>
+                <button
+                  onClick={() => setIsMobileAboutOpen(!isMobileAboutOpen)}
+                  className="flex items-center justify-between w-full px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
+                >
+                  <div className="flex items-center space-x-3">
+                    <FaUsers className="h-5 w-5" />
+                    <span className="font-medium">About</span>
+                  </div>
+                  <ChevronDown className={`h-4 w-4 transition-transform ${isMobileAboutOpen ? 'rotate-180' : ''}`} />
+                </button>
+                
+                {isMobileAboutOpen && (
+                  <div className="mt-2 ml-4 space-y-2">
+                    {aboutDropdown.map((item) => (
+                      item.onClick ? (
+                        <button
+                          key={item.name}
+                          onClick={() => {
+                            item.onClick();
+                            setIsOpen(false);
+                            setIsMobileAboutOpen(false);
+                          }}
+                          className="w-full text-left block px-4 py-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+                        >
+                          {item.name}
+                        </button>
+                      ) : (
+                        <a
+                          key={item.name}
+                          href={item.href}
+                          className="block px-4 py-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+                          onClick={() => {
+                            setIsOpen(false);
+                            setIsMobileAboutOpen(false);
+                          }}
+                        >
+                          {item.name}
+                        </a>
+                      )
+                    ))}
+                  </div>
+                )}
+              </div>
               
               {/* Mobile Admission Dropdown */}
               <div>
@@ -357,6 +451,19 @@ export default function Navbar() {
               {/* Links After Courses */}
               {navLinksAfterCourses.map((link) => {
                 const Icon = link.icon;
+                if (link.href.startsWith('/')) {
+                  return (
+                    <Link
+                      key={link.name}
+                      href={link.href}
+                      className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      <Icon className="h-5 w-5" />
+                      <span className="font-medium">{link.name}</span>
+                    </Link>
+                  );
+                }
                 return (
                   <a
                     key={link.name}

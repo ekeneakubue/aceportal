@@ -72,6 +72,14 @@ export default function Reports() {
     // Add actual report generation logic here
   };
 
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${month}/${day}/${year}`;
+  };
+
   return (
     <AdminLayout>
       <div className="p-8">
@@ -194,7 +202,7 @@ export default function Reports() {
                       </span>
                     </td>
                     <td className="py-4 px-6 text-sm text-gray-600 dark:text-gray-400">
-                      {new Date(report.date).toLocaleDateString()}
+                      {formatDate(report.date)}
                     </td>
                     <td className="py-4 px-6 text-sm text-gray-600 dark:text-gray-400">
                       {report.size}

@@ -121,7 +121,135 @@ enum UserRole {
   Lecturer
   Student
   Applicant
+  PG_Rep
   Staff
   Head_of_Finance
   Industrial_Liaison_Officer
+}
+
+model Program {
+  id                  String   @id @default(cuid())
+  title               String
+  slug                String   @unique
+  subtitle            String?
+  description         String   @db.Text
+  icon                String?  // Icon name/identifier
+  color               String?  // Gradient color classes (e.g., "from-green-500 to-emerald-500")
+  duration            String?  // e.g., "2-5 Years", "3-6 Months"
+  studyMode           String?  // e.g., "Full-time / Part-time / Online"
+  totalCourses        Int      @default(0)
+  fee                 String?  // e.g., "₦350,000 - ₦500,000 per session"
+  applicationDeadline String?
+  requirements        Json?    // Array of requirement strings
+  careerProspects     Json?    // Array of career prospect strings
+  thematicAreas       Json?    // Array of thematic areas (for graduate programs)
+  services            Json?    // Array of services (for service-based programs)
+  isActive            Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  courses             Course[]
+
+  @@map("programs")
+}
+
+model Course {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  programId   String
+  level       CourseLevel
+  duration    String?  // e.g., "6 Months", "18-24 Months"
+  studyMode   String?  // e.g., "Full-time / Part-time / Online"
+  fee         String?  // e.g., "₦150,000"
+  overview    String   @db.Text
+  objectives  Json?    // Array of learning objective strings
+  curriculum  Json?    // Array of curriculum module strings
+  requirements Json?   // Array of requirement strings
+  careerPaths Json?    // Array of career path strings
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  program     Program  @relation(fields: [programId], references: [id], onDelete: Cascade)
+
+  @@index([programId])
+  @@index([slug])
+  @@map("courses")
+}
+
+enum CourseLevel {
+  CERTIFICATE
+  DIPLOMA
+  BACHELORS
+  MASTERS
+  PHD
+  MASTERS_AND_PHD
+}
+
+model News {
+  id          String       @id @default(cuid())
+  title       String
+  slug        String       @unique
+  category    NewsCategory
+  excerpt     String       @db.Text
+  content     String       @db.Text
+  author      String
+  image       String       // Image path/URL
+  tags        Json?        // Array of tag strings
+  publishedAt DateTime?    // Publication date
+  isPublished Boolean      @default(false)
+  isFeatured  Boolean      @default(false)
+  views       Int          @default(0)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([slug])
+  @@index([category])
+  @@index([isPublished])
+  @@index([isFeatured])
+  @@index([publishedAt])
+  @@map("news")
+}
+
+enum NewsCategory {
+  RESEARCH
+  ACHIEVEMENT
+  EVENT
+  ANNOUNCEMENT
+  COLLABORATION
+}
+
+model Team {
+  id             String     @id @default(cuid())
+  name           String
+  slug           String     @unique
+  role           TeamRole
+  title          String
+  department     String?
+  email          String
+  phone          String?
+  image          String     // Image path/URL
+  bio            String     @db.Text
+  qualifications Json       // Array of qualification strings
+  researchAreas  Json?      // Array of research area strings
+  linkedin       String?
+  twitter        String?
+  isActive       Boolean    @default(true)
+  displayOrder   Int        @default(0) // For custom ordering
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  @@index([slug])
+  @@index([role])
+  @@index([isActive])
+  @@index([displayOrder])
+  @@map("team")
+}
+
+enum TeamRole {
+  LEADERSHIP
+  FACULTY
+  STAFF
+  RESEARCH
 }

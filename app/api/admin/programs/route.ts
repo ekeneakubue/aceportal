@@ -1,0 +1,130 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
+
+// GET all programs
+export async function GET(request: NextRequest) {
+  try {
+    // TODO: Add authentication check for SUPER_ADMIN or Center_Leader role
+    
+    const programs = await prisma.program.findMany({
+      include: {
+        courses: {
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+            level: true,
+            isActive: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      programs,
+    });
+  } catch (error) {
+    console.error('Error fetching programs:', error);
+    return NextResponse.json(
+      { success: false, message: 'Failed to fetch programs' },
+      { status: 500 }
+    );
+  }
+}
+
+// POST create new program
+export async function POST(request: NextRequest) {
+  try {
+    // TODO: Add authentication check for SUPER_ADMIN or Center_Leader role
+    
+    const body = await request.json();
+    const {
+      title,
+      slug,
+      subtitle,
+      description,
+      icon,
+      color,
+      duration,
+      studyMode,
+      fee,
+      applicationDeadline,
+      requirements,
+      careerProspects,
+      thematicAreas,
+      services,
+      isActive,
+    } = body;
+
+    // Validate required fields
+    if (!title || !slug || !description) {
+      return NextResponse.json(
+        { success: false, message: 'Title, slug, and description are required' },
+        { status: 400 }
+      );
+    }
+
+    // Check if program with slug already exists
+    const existingProgram = await prisma.program.findUnique({
+      where: { slug },
+    });
+
+    if (existingProgram) {
+      return NextResponse.json(
+        { success: false, message: 'Program with this slug already exists' },
+        { status: 400 }
+      );
+    }
+
+    // Count courses for totalCourses
+    const totalCourses = 0;
+
+    // Create program
+    const program = await prisma.program.create({
+      data: {
+        title,
+        slug,
+        subtitle: subtitle || null,
+        description,
+        icon: icon || null,
+        color: color || null,
+        duration: duration || null,
+        studyMode: studyMode || null,
+        totalCourses,
+        fee: fee || null,
+        applicationDeadline: applicationDeadline || null,
+        requirements: requirements || null,
+        careerProspects: careerProspects || null,
+        thematicAreas: thematicAreas || null,
+        services: services || null,
+        isActive: isActive !== undefined ? isActive : true,
+      },
+      include: {
+        courses: true,
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      program,
+      message: 'Program created successfully',
+    });
+  } catch (error: any) {
+    console.error('Error creating program:', error);
+    return NextResponse.json(
+      { 
+        success: false, 
+        message: 'Failed to create program',
+        error: error.message || 'Unknown error'
+      },
+      { status: 500 }
+    );
+  }
+}
+

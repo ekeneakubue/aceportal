@@ -270,7 +270,10 @@ export default function Home() {
                   </li>
                 ))}
               </ul>
-              <button className="px-8 py-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl font-semibold hover:shadow-xl transition-all flex items-center group">
+              <button 
+                onClick={() => router.push('/about')}
+                className="px-8 py-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl font-semibold hover:shadow-xl transition-all flex items-center group"
+              >
                 More About Us
                 <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </button>
@@ -390,7 +393,10 @@ export default function Home() {
                   </li>
                 ))}
               </ul>
-              <button className="px-8 py-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl font-semibold hover:shadow-xl transition-all flex items-center group">
+              <button 
+                onClick={() => router.push('/research')}
+                className="px-8 py-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl font-semibold hover:shadow-xl transition-all flex items-center group"
+              >
                 Explore Research
                 <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </button>

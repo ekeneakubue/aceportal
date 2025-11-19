@@ -4,8 +4,7 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   ArrowLeft, Check, GraduationCap, Clock, Users, BookOpen, 
-  Globe, Award, DollarSign, Calendar, FileText, Microscope,
-  Lightbulb, Briefcase
+  Calendar, FileText, Microscope, Lightbulb, Briefcase
 } from 'lucide-react';
 import Navbar from '@/app/components/navbar/page';
 import Footer from '@/app/components/footer/page';
@@ -188,7 +187,7 @@ const programsData: Record<string, any> = {
       'DevOps Engineer',
       'Freelance Developer',
     ],
-    fee: '₦50,000 - ₦150,000 per course',
+    fee: '₦50,000 - ₦200,000 per course',
     applicationDeadline: 'Rolling Admissions',
   },
   'ace-sped-c-code-studio': {
@@ -406,7 +405,7 @@ export default function ProgramDetailPage({ params }: { params: Promise<{ slug: 
         </div>
       </section>
 
-      {/* Programs/Courses Section */}
+      {/* Available Courses Section */}
       <section className="py-16 bg-white dark:bg-gray-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">
@@ -445,109 +444,6 @@ export default function ProgramDetailPage({ params }: { params: Promise<{ slug: 
                 </div>
               </div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Thematic Areas (for graduate programs) */}
-      {program.thematicAreas && (
-        <section className="py-16 bg-gray-50 dark:bg-gray-950">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">Thematic Areas</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {program.thematicAreas.map((area: string, index: number) => (
-                <div key={index} className="bg-white dark:bg-gray-800 rounded-xl p-6 flex items-start">
-                  <div className="bg-green-100 dark:bg-green-900 p-3 rounded-lg mr-4">
-                    <Globe className="h-6 w-6 text-green-600 dark:text-green-400" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{area}</h3>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Requirements Section */}
-      <section className="py-16 bg-white dark:bg-gray-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            <div>
-              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">
-                Entry Requirements
-              </h2>
-              <ul className="space-y-4">
-                {program.requirements.map((req: string, index: number) => (
-                  <li key={index} className="flex items-start">
-                    <Check className="h-6 w-6 text-green-600 mr-3 flex-shrink-0 mt-1" />
-                    <span className="text-gray-700 dark:text-gray-300">{req}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div>
-              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">
-                Career Prospects
-              </h2>
-              <div className="grid grid-cols-1 gap-3">
-                {program.careerProspects.map((career: string, index: number) => (
-                  <div key={index} className="flex items-center bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-                    <Award className="h-5 w-5 text-green-600 mr-3" />
-                    <span className="text-gray-700 dark:text-gray-300 font-medium">{career}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Fees & Application */}
-      <section className="py-16 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-xl">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-              <div>
-                <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-                  Ready to Get Started?
-                </h2>
-                <p className="text-gray-600 dark:text-gray-400 mb-6">
-                  Take the first step towards your future. Apply now and join a community of learners and innovators.
-                </p>
-                <div className="flex items-center mb-4">
-                  <DollarSign className="h-6 w-6 text-green-600 mr-3" />
-                  <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Program Fee</p>
-                    <p className="text-xl font-bold text-gray-900 dark:text-white">{program.fee}</p>
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  <Calendar className="h-6 w-6 text-green-600 mr-3" />
-                  <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Application Deadline</p>
-                    <p className="text-xl font-bold text-gray-900 dark:text-white">{program.applicationDeadline}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <button
-                  onClick={() => router.push('/application')}
-                  className="w-full px-8 py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-semibold text-lg hover:shadow-xl hover:scale-105 transition-all"
-                >
-                  Apply for This Program
-                </button>
-                <button className="w-full px-8 py-4 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 transition-all">
-                  Request More Information
-                </button>
-                <button className="w-full px-8 py-4 bg-transparent border-2 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
-                  Contact Admissions Office
-                </button>
-              </div>
-            </div>
           </div>
         </div>
       </section>

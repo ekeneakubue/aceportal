@@ -3,12 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import { 
   ArrowRight, ArrowLeft, Check, Upload, X, User, Users, 
-  GraduationCap, Briefcase, FileText, DollarSign, Camera,
+  GraduationCap, Briefcase, FileText, Camera,
   Mail, Phone, MapPin, Calendar, BookOpen, CreditCard
 } from 'lucide-react';
+import { TbCurrencyNaira } from 'react-icons/tb';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import Script from 'next/script';
 import Navbar from '../components/navbar/page';
 import Footer from '../components/footer/page';
 
@@ -440,37 +440,55 @@ export default function ApplicationPage() {
     );
   };
 
-  // Paystack payment handler
-  const handlePaystackPayment = () => {
-    if (!formData.email) {
-      alert('Please fill in your email address before proceeding to payment');
-      return;
+  // Paystack payment handler - redirects to payment link
+  const handlePaystackPayment = (e?: React.MouseEvent<HTMLButtonElement>) => {
+    // Prevent any default behavior
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
     }
 
-    // @ts-ignore - PaystackPop is loaded via script tag
-    const handler = window.PaystackPop.setup({
-      key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || 'pk_test_xxxxxxxxxxxx',
-      email: formData.email,
-      amount: 2500000, // Amount in kobo (₦25,000 = 2,500,000 kobo)
-      currency: 'NGN',
-      ref: `ACE-${new Date().getTime()}`,
-      callback: function(response: any) {
-        console.log('Payment successful:', response);
-        setFormData({ 
-          ...formData, 
-          paymentReference: response.reference,
-          paymentMethod: 'Paystack'
-        });
-        setPaymentCompleted(true);
-        alert('Payment successful! You can now submit your application.');
-      },
-      onClose: function() {
-        console.log('Payment dialog closed');
-        alert('Payment cancelled. Please complete payment to submit your application.');
+    try {
+      // Validate email
+      if (!formData.email || formData.email.trim() === '') {
+        alert('Please fill in your email address before proceeding to payment');
+        return;
       }
-    });
-    
-    handler.openIframe();
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        alert('Please enter a valid email address');
+        return;
+      }
+
+      // Store form data in sessionStorage before redirecting
+      if (typeof window !== 'undefined') {
+        try {
+          sessionStorage.setItem('aceApplicationData', JSON.stringify(formData));
+          sessionStorage.setItem('aceApplicationStep', currentStep);
+        } catch (storageError) {
+          console.error('Error saving to sessionStorage:', storageError);
+        }
+
+        // Paystack payment link
+        const paystackPaymentLink = 'https://paystack.shop/pay/os3n36afkw';
+        
+        // Add return URL as query parameter - redirect back to application page
+        const returnUrl = `${window.location.origin}/application`;
+        const paymentUrl = `${paystackPaymentLink}?callback_url=${encodeURIComponent(returnUrl)}&email=${encodeURIComponent(formData.email)}`;
+        
+        console.log('Redirecting to Paystack payment link:', paymentUrl);
+        
+        // Redirect to Paystack payment page
+        window.location.href = paymentUrl;
+      } else {
+        alert('Unable to proceed with payment. Please try again.');
+      }
+    } catch (error: any) {
+      console.error('Error in handlePaystackPayment:', error);
+      alert('An error occurred while processing your payment request. Please try again.');
+    }
   };
 
   const steps: { id: ApplicationStep; title: string; icon: any }[] = [
@@ -482,7 +500,7 @@ export default function ApplicationPage() {
     { id: 'employment', title: 'Employment', icon: Briefcase },
     { id: 'research', title: 'Research', icon: FileText },
     { id: 'recommendations', title: 'Recommendations', icon: Mail },
-    { id: 'payment', title: 'Payment', icon: DollarSign },
+    { id: 'payment', title: 'Payment', icon: TbCurrencyNaira },
   ];
 
   const currentStepIndex = steps.findIndex(s => s.id === currentStep);
@@ -1537,13 +1555,19 @@ export default function ApplicationPage() {
                   </div>
 
                   <button 
-                    onClick={handlePaystackPayment}
+                    onClick={(e) => handlePaystackPayment(e)}
                     type="button"
-                    className="w-full px-8 py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-semibold text-lg hover:shadow-xl hover:scale-105 transition-all duration-200 flex items-center justify-center"
+                    disabled={!formData.email || formData.email.trim() === ''}
+                    className="w-full px-8 py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-semibold text-lg hover:shadow-xl hover:scale-105 transition-all duration-200 flex items-center justify-center cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-none"
                   >
                     <CreditCard className="h-6 w-6 mr-3" />
                     Pay ₦25,000 with Paystack
                   </button>
+                  {(!formData.email || formData.email.trim() === '') && (
+                    <p className="text-xs text-red-600 dark:text-red-400 mt-2 text-center">
+                      Please fill in your email address in the Personal Information section to proceed with payment
+                    </p>
+                  )}
                 </div>
               ) : (
                 <div className="bg-green-50 dark:bg-green-900/20 border-2 border-green-500 rounded-lg p-6">
@@ -1582,10 +1606,100 @@ export default function ApplicationPage() {
     }
   };
 
+  // Check for payment callback on mount
+  useEffect(() => {
+    // Check if returning from Paystack payment
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const reference = urlParams.get('reference');
+      const trxref = urlParams.get('trxref');
+      const paymentCallback = urlParams.get('payment_callback');
+      const paymentRef = reference || trxref;
+      
+      if (paymentRef) {
+        // Restore form data from sessionStorage if available
+        const savedData = sessionStorage.getItem('aceApplicationData');
+        const savedStep = sessionStorage.getItem('aceApplicationStep');
+        
+        if (savedData) {
+          try {
+            const parsedData = JSON.parse(savedData);
+            setFormData({
+              ...parsedData,
+              paymentReference: paymentRef,
+              paymentMethod: 'Paystack'
+            });
+            
+            // Navigate to payment step
+            if (savedStep) {
+              setCurrentStep(savedStep as ApplicationStep);
+            } else {
+              setCurrentStep('payment');
+            }
+            
+            // Clear sessionStorage
+            sessionStorage.removeItem('aceApplicationData');
+            sessionStorage.removeItem('aceApplicationStep');
+          } catch (error) {
+            console.error('Error restoring form data:', error);
+          }
+        } else {
+          // Even if no saved data, update payment reference
+          setFormData(prev => ({
+            ...prev,
+            paymentReference: paymentRef,
+            paymentMethod: 'Paystack'
+          }));
+          // Navigate to payment step to show success
+          setCurrentStep('payment');
+        }
+        
+        // Always set payment completed if reference exists
+        setPaymentCompleted(true);
+        
+        // Save payment reference to localStorage for persistence
+        localStorage.setItem('acePaymentReference', paymentRef);
+        
+        // Clean URL
+        window.history.replaceState({}, '', window.location.pathname);
+        
+        // Show success message
+        alert('Payment successful! You can now submit your application.');
+      }
+    }
+  }, []);
+
+  // Check if payment reference exists in formData (for persistence across page refreshes)
+  useEffect(() => {
+    if (formData.paymentReference && formData.paymentReference.trim() !== '') {
+      setPaymentCompleted(true);
+    } else {
+      // Check localStorage for payment reference (persists across sessions)
+      if (typeof window !== 'undefined') {
+        const savedPaymentRef = localStorage.getItem('acePaymentReference');
+        if (savedPaymentRef) {
+          setFormData(prev => ({
+            ...prev,
+            paymentReference: savedPaymentRef,
+            paymentMethod: 'Paystack'
+          }));
+          setPaymentCompleted(true);
+        }
+      }
+    }
+  }, [formData.paymentReference]);
+
+  // Save payment reference to localStorage when it's set
+  useEffect(() => {
+    if (formData.paymentReference && formData.paymentReference.trim() !== '') {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('acePaymentReference', formData.paymentReference);
+      }
+    }
+  }, [formData.paymentReference]);
+
   return (
     <>
-      {/* Load Paystack Inline Script */}
-      <Script src="https://js.paystack.co/v1/inline.js" strategy="lazyOnload" />
       
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <Navbar />

@@ -1,331 +1,126 @@
-# Paystack Payment Integration Guide
+# Paystack Payment Integration Setup
 
-## Overview
-The application payment page now uses **Paystack** exclusively for processing application fees. This provides a secure, instant, and user-friendly payment experience.
+This guide will help you set up Paystack payment integration for the application form.
 
-## Features
+## Environment Variables Required
 
-### ✅ What's Included
-- **Paystack Inline Payment**: Secure payment popup
-- **Multiple Payment Methods**:
-  - Card payments (Visa, Mastercard, Verve)
-  - Bank Transfer
-  - USSD
-  - Mobile Money
-- **Instant Payment Verification**: No manual verification needed
-- **Automatic Transaction Reference**: Generated and stored automatically
-- **Payment Status Tracking**: Real-time payment confirmation
-- **Disabled Submission**: Submit button only works after successful payment
+You need to add the following environment variables to your `.env.local` file:
 
-## Setup Instructions
+```env
+# Paystack Secret Key (from your Paystack dashboard)
+PAYSTACK_SECRET_KEY=sk_test_xxxxxxxxxxxxxxxxxxxxx
 
-### 1. Create a Paystack Account
-1. Visit [https://paystack.com](https://paystack.com)
-2. Click "Sign Up" and create your account
-3. Complete the verification process
-
-### 2. Get Your API Keys
-1. Log in to your Paystack dashboard
-2. Navigate to **Settings** → **API Keys & Webhooks**
-3. You'll find two keys:
-   - **Test Public Key** (pk_test_xxxxx) - for development
-   - **Live Public Key** (pk_live_xxxxx) - for production
-
-### 3. Configure Environment Variables
-Create a `.env.local` file in the project root:
-
-```bash
-# Copy this into your .env.local file
-NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY=pk_test_your_test_key_here
+# Your application URL (for production, use your actual domain)
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
-**Important**: 
-- Never commit `.env.local` to version control
-- Use test keys for development
-- Use live keys only in production
+## How to Get Your Paystack Keys
 
-### 4. No Additional Dependencies Required
-The Paystack integration uses the official Paystack inline JavaScript, which is loaded directly from Paystack's CDN. No npm packages are required!
+1. **Sign up/Login to Paystack**: Go to [https://paystack.com](https://paystack.com) and create an account or login.
 
-The script is automatically loaded when users reach the payment page:
-```html
-<Script src="https://js.paystack.co/v1/inline.js" strategy="lazyOnload" />
-```
+2. **Get Your API Keys**:
+   - Go to your Paystack Dashboard
+   - Navigate to **Settings** → **API Keys & Webhooks**
+   - Copy your **Secret Key** (starts with `sk_test_` for test mode or `sk_live_` for live mode)
+   - For testing, use the **Test Secret Key**
 
-### 5. Test the Integration
-1. Start the development server:
-   ```bash
-   npm run dev
-   ```
+3. **Add to Environment Variables**:
+   - Create or edit `.env.local` in your project root
+   - Add the `PAYSTACK_SECRET_KEY` variable
+   - Add the `NEXT_PUBLIC_APP_URL` variable
 
-2. Navigate to the application page: `/application`
+## Testing the Integration
 
-3. Fill out the application form through all steps
-
-4. On the payment page, click "Pay ₦25,000 with Paystack"
-
-5. Use Paystack test cards:
-   - **Successful Payment**: `4084 0840 8408 4081`
-   - **Failed Payment**: `5060 6666 6666 6666`
+1. **Test Mode**: Use test keys (starts with `sk_test_`)
+   - Test card: `4084084084084081`
    - CVV: Any 3 digits
    - Expiry: Any future date
-   - PIN: `1234`
+   - PIN: Any 4 digits
+   - OTP: `123456`
+
+2. **Live Mode**: Use live keys (starts with `sk_live_`)
+   - Only use in production
+   - Real payments will be processed
 
 ## How It Works
 
-### Payment Flow
-```
-1. User reaches payment page
-   ↓
-2. User clicks "Pay with Paystack" button
-   ↓
-3. Paystack popup opens
-   ↓
-4. User selects payment method & pays
-   ↓
-5. Payment processed by Paystack
-   ↓
-6. Success callback triggered
-   ↓
-7. Transaction reference saved
-   ↓
-8. Payment status updated
-   ↓
-9. Submit button enabled
-   ↓
-10. User can submit application
-```
-
-### Code Structure
-
-#### Paystack Payment Handler (app/application/page.tsx)
-The integration uses Paystack Popup (inline script) for a seamless payment experience:
-
-```typescript
-const handlePaystackPayment = () => {
-  // Validate email
-  if (!formData.email) {
-    alert('Please fill in your email address before proceeding to payment');
-    return;
-  }
-
-  // Initialize Paystack popup
-  const handler = window.PaystackPop.setup({
-    key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY,
-    email: formData.email,
-    amount: 2500000, // ₦25,000 in kobo
-    currency: 'NGN',
-    ref: `ACE-${new Date().getTime()}`,
-    
-    // Success callback
-    callback: function(response) {
-      setFormData({ 
-        ...formData, 
-        paymentReference: response.reference,
-        paymentMethod: 'Paystack'
-      });
-      setPaymentCompleted(true);
-      alert('Payment successful! You can now submit your application.');
-    },
-    
-    // Close callback
-    onClose: function() {
-      alert('Payment cancelled. Please complete payment to submit your application.');
-    }
-  });
-  
-  // Open payment popup
-  handler.openIframe();
-};
-```
-
-#### Payment Button
-```tsx
-<button 
-  onClick={handlePaystackPayment}
-  type="button"
-  className="w-full px-8 py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg..."
->
-  <CreditCard className="h-6 w-6 mr-3" />
-  Pay ₦25,000 with Paystack
-</button>
-```
-
-## Database Changes
-
-The Prisma schema already includes payment fields:
-- `paymentMethod`: Automatically set to "Paystack"
-- `paymentReference`: Stores the Paystack transaction reference
-- `paymentProof`: No longer required (verification is automatic)
-
-## UI Components
-
-### Before Payment
-- Shows application fee (₦25,000)
-- Lists available payment methods
-- Displays Paystack payment button
-- Email confirmation notice
-
-### During Payment
-- Paystack popup opens
-- User selects payment method
-- Secure payment processing
-
-### After Successful Payment
-- Green success banner with checkmark
-- Transaction reference displayed
-- Submit button becomes enabled
-- Confirmation message
-
-### Failed Payment
-- User can retry payment
-- No data is lost
-- Submit button remains disabled
-
-## Testing
-
-### Test Mode
-When using test keys (`pk_test_...`), you can:
-- Use test cards (no real money charged)
-- Simulate successful and failed payments
-- Test the complete flow
-
-### Test Cards
-| Card Number | Result |
-|------------|--------|
-| 4084 0840 8408 4081 | Success |
-| 5060 6666 6666 6666 | Fail |
-| 4084 0840 8408 4084 | Success (requires OTP: 123456) |
-
-### Test Bank Transfer
-- Test bank account details will be provided
-- No actual transfer needed in test mode
-
-## Going Live
-
-### Prerequisites
-1. **Complete Paystack Verification**:
-   - Submit business documents
-   - Verify business information
-   - Wait for approval (usually 24-48 hours)
-
-2. **Switch to Live Keys**:
-   ```bash
-   # Update .env.local
-   NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY=pk_live_your_live_key_here
-   ```
-
-3. **Update Application Fee** (if needed):
-   ```typescript
-   // In app/application/page.tsx
-   amount: 2500000, // ₦25,000 in kobo (1 Naira = 100 kobo)
-   ```
-
-### Compliance
-- Paystack handles PCI compliance
-- No sensitive card data touches your server
-- All transactions are encrypted
-
-## Webhook Integration (Optional)
-
-For additional security, you can set up webhooks to verify payments server-side.
-
-### Setup
-1. In Paystack Dashboard: **Settings** → **API Keys & Webhooks**
-2. Add webhook URL: `https://yourdomain.com/api/webhooks/paystack`
-3. Create webhook handler in your app
-
-Example webhook route (`app/api/webhooks/paystack/route.ts`):
-```typescript
-import { NextRequest, NextResponse } from 'next/server';
-import crypto from 'crypto';
-
-export async function POST(request: NextRequest) {
-  const body = await request.text();
-  const signature = request.headers.get('x-paystack-signature');
-  
-  // Verify signature
-  const hash = crypto
-    .createHmac('sha512', process.env.PAYSTACK_SECRET_KEY!)
-    .update(body)
-    .digest('hex');
-  
-  if (hash === signature) {
-    const event = JSON.parse(body);
-    
-    if (event.event === 'charge.success') {
-      // Update application payment status
-      // Send confirmation email
-      // etc.
-    }
-  }
-  
-  return NextResponse.json({ received: true });
-}
-```
+1. User fills out the application form
+2. User clicks "Pay ₦25,000 with Paystack" button
+3. System initializes a Paystack transaction via API
+4. User is redirected to Paystack payment page
+5. User completes payment on Paystack
+6. User is redirected back to application page with payment reference
+7. Submit button is enabled after successful payment
 
 ## Troubleshooting
 
-### Payment Button Not Working
-- Check if `NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY` is set
-- Verify the public key is correct
-- Check browser console for errors
-- Ensure email field is filled
+### Error: "Please enter a valid Key" or "Invalid API key"
+1. **Verify the key is set correctly**:
+   - Make sure `PAYSTACK_SECRET_KEY` is set in your `.env.local` file
+   - The key should start with `sk_test_` for test mode or `sk_live_` for live mode
+   - No extra spaces, quotes, or newlines around the key
 
-### Payment Successful but Button Still Disabled
-- Check browser console for JavaScript errors
-- Verify `handlePaystackSuccess` is being called
-- Clear browser cache and reload
+2. **Get a fresh key from Paystack**:
+   - Go to [Paystack Dashboard](https://dashboard.paystack.com)
+   - Navigate to **Settings** → **API Keys & Webhooks**
+   - Click **Reset** next to your test secret key to generate a new one
+   - Copy the new key and update your `.env.local` file
 
-### "Payment Declined" Error
-- In test mode: Use correct test cards
-- In live mode: Contact Paystack support
-- Check if card has sufficient funds
-- Verify card is enabled for online transactions
+3. **Restart your server**:
+   - Stop your development server (Ctrl+C)
+   - Run `npm run dev` again to load the new environment variables
 
-## Support
+4. **Test the key**:
+   - Visit `http://localhost:3000/api/payments/verify` in your browser
+   - This will verify if your API key is working correctly
 
-### Paystack Support
-- Email: support@paystack.com
-- Documentation: https://paystack.com/docs
-- Dashboard: https://dashboard.paystack.com
+### Error: "Payment service is not configured"
+- Check that `PAYSTACK_SECRET_KEY` exists in your `.env.local` file
+- Make sure you're using the correct key format (starts with `sk_test_` or `sk_live_`)
+- Restart your development server after adding the environment variable
 
-### Developer Resources
-- API Reference: https://paystack.com/docs/api
-- Test Cards: https://paystack.com/docs/payments/test-payments
-- Integration Guide: https://paystack.com/docs/guides
+### Error: "Invalid API key format"
+- Your key must start with `sk_test_` (for test) or `sk_live_` (for live)
+- Make sure there are no extra characters or spaces
+- Copy the key directly from Paystack dashboard without modifications
 
-## Security Best Practices
+### Payment not redirecting
+- Check browser console for errors (F12 → Console tab)
+- Verify `NEXT_PUBLIC_APP_URL` is set correctly in `.env.local`
+- Make sure the API route `/api/payments/initialize` is accessible
+- Check the Network tab in browser DevTools to see the API response
 
-1. ✅ **Never** expose your secret key (sk_...)
-2. ✅ **Always** use HTTPS in production
-3. ✅ **Validate** payment on server-side using webhooks
-4. ✅ **Store** only transaction references, not card details
-5. ✅ **Use** environment variables for API keys
-6. ✅ **Test** thoroughly before going live
+### Test Keys Not Working
+If your test keys are not working:
 
-## Cost
+1. **Verify you're using test keys**:
+   - Test keys start with `sk_test_`
+   - Live keys start with `sk_live_`
+   - Make sure you're using the correct one for your environment
 
-Paystack charges:
-- **Domestic cards**: 1.5% + ₦100 per transaction
-- **International cards**: 3.9% + ₦100 per transaction
-- No setup fees
-- No monthly fees
+2. **Check Paystack account status**:
+   - Make sure your Paystack account is active
+   - Verify you haven't exceeded any rate limits
+   - Check if your account has any restrictions
 
-For ₦25,000 application fee:
-- Your fee: ₦25,000
-- Paystack charge: ~₦475
-- Net received: ~₦24,525
+3. **Try resetting the key**:
+   - In Paystack Dashboard → Settings → API Keys & Webhooks
+   - Click **Reset** to generate a new test secret key
+   - Update your `.env.local` with the new key
+   - Restart your server
 
-## Conclusion
+4. **Check server logs**:
+   - Look at your terminal/console where the dev server is running
+   - Check for any error messages related to Paystack API calls
+   - The logs will show detailed error information
 
-The Paystack integration provides:
-- ✅ Secure payment processing
-- ✅ Multiple payment methods
-- ✅ Instant verification
-- ✅ Better user experience
-- ✅ Reduced manual work
-- ✅ Professional payment flow
+5. **Test the API directly**:
+   - Visit `http://localhost:3000/api/payments/verify` to test your key
+   - This endpoint will tell you if your key is valid and working
 
-For any issues or questions, refer to the Paystack documentation or contact their support team.
+## Security Notes
 
+- **Never commit** `.env.local` to version control
+- Use test keys for development
+- Use live keys only in production
+- Keep your secret keys secure and never expose them in client-side code
