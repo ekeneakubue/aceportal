@@ -15,7 +15,12 @@ export async function GET(
     const program = await prisma.program.findUnique({
       where: { id },
       include: {
-        courses: true,
+        courses: {
+          orderBy: [
+            { displayOrder: 'asc' },
+            { createdAt: 'desc' },
+          ],
+        },
       },
     });
 
@@ -56,14 +61,8 @@ export async function PUT(
       description,
       icon,
       color,
-      duration,
-      studyMode,
-      fee,
-      applicationDeadline,
-      requirements,
-      careerProspects,
-      thematicAreas,
-      services,
+      heroImage,
+      totalCourses,
       isActive,
     } = body;
 
@@ -93,10 +92,12 @@ export async function PUT(
       }
     }
 
-    // Count courses for totalCourses
-    const courseCount = await prisma.course.count({
-      where: { programId: id },
-    });
+    // Count courses for totalCourses (use provided value or count from database)
+    const courseCount = totalCourses !== undefined 
+      ? totalCourses 
+      : await prisma.course.count({
+          where: { programId: id },
+        });
 
     // Update program
     const program = await prisma.program.update({
@@ -108,19 +109,17 @@ export async function PUT(
         ...(description && { description }),
         ...(icon !== undefined && { icon: icon || null }),
         ...(color !== undefined && { color: color || null }),
-        ...(duration !== undefined && { duration: duration || null }),
-        ...(studyMode !== undefined && { studyMode: studyMode || null }),
-        ...(fee !== undefined && { fee: fee || null }),
-        ...(applicationDeadline !== undefined && { applicationDeadline: applicationDeadline || null }),
-        ...(requirements !== undefined && { requirements }),
-        ...(careerProspects !== undefined && { careerProspects }),
-        ...(thematicAreas !== undefined && { thematicAreas }),
-        ...(services !== undefined && { services }),
+        ...(heroImage !== undefined && { heroImage: heroImage || null }),
+        ...(totalCourses !== undefined && { totalCourses: courseCount }),
         ...(isActive !== undefined && { isActive }),
-        totalCourses: courseCount,
       },
       include: {
-        courses: true,
+        courses: {
+          orderBy: [
+            { displayOrder: 'asc' },
+            { createdAt: 'desc' },
+          ],
+        },
       },
     });
 
@@ -154,7 +153,12 @@ export async function DELETE(
     const program = await prisma.program.findUnique({
       where: { id },
       include: {
-        courses: true,
+        courses: {
+          orderBy: [
+            { displayOrder: 'asc' },
+            { createdAt: 'desc' },
+          ],
+        },
       },
     });
 

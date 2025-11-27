@@ -29,16 +29,23 @@ interface ApplicationData {
   firstname: string;
   surname: string;
   middlename: string;
+  maidenName: string;
+  nationalId: string;
+  nationalIdFile: string;
+  maritalStatus: string;
   dateOfBirth: string;
   gender: string;
   nationality: string;
   phoneNumber: string;
   alternatePhone: string;
   address: string;
+  homeAddress: string;
+  homeTown: string;
   city: string;
   state: string;
   country: string;
   postalCode: string;
+  religion: string;
   avatar: string;
   
   // Next of Kin
@@ -367,22 +374,33 @@ export default function ApplicationPage() {
   const [paymentCompleted, setPaymentCompleted] = useState(false);
   const [availableStates, setAvailableStates] = useState<string[]>([]);
   const [availableCities, setAvailableCities] = useState<string[]>([]);
+  const [programs, setPrograms] = useState<any[]>([]);
+  const [programsLoading, setProgramsLoading] = useState(false);
+  const [programsError, setProgramsError] = useState<string | null>(null);
+  const [selectedProgram, setSelectedProgram] = useState<any | null>(null);
   
   const [formData, setFormData] = useState<ApplicationData>({
     email: '',
     firstname: '',
     surname: '',
     middlename: '',
+    maidenName: '',
+    nationalId: '',
+    nationalIdFile: '',
+    maritalStatus: '',
     dateOfBirth: '',
     gender: '',
-    nationality: '',
+    nationality: 'Nigeria',
     phoneNumber: '',
     alternatePhone: '',
     address: '',
+    homeAddress: '',
+    homeTown: '',
     city: '',
     state: '',
     country: '',
     postalCode: '',
+    religion: '',
     avatar: '',
     kinFirstname: '',
     kinSurname: '',
@@ -440,8 +458,8 @@ export default function ApplicationPage() {
     );
   };
 
-  // Paystack payment handler - redirects to payment link
-  const handlePaystackPayment = (e?: React.MouseEvent<HTMLButtonElement>) => {
+  // Paystack payment handler - mirrors SkillApplication dynamic initialize flow
+  const handlePaystackPayment = async (e?: React.MouseEvent<HTMLButtonElement>) => {
     // Prevent any default behavior
     if (e) {
       e.preventDefault();
@@ -462,6 +480,12 @@ export default function ApplicationPage() {
         return;
       }
 
+      const amountInNaira = getApplicationPriceInNaira();
+      if (!amountInNaira || amountInNaira <= 0) {
+        alert('Invalid application fee amount. Please contact support.');
+        return;
+      }
+
       // Store form data in sessionStorage before redirecting
       if (typeof window !== 'undefined') {
         try {
@@ -471,17 +495,32 @@ export default function ApplicationPage() {
           console.error('Error saving to sessionStorage:', storageError);
         }
 
-        // Paystack payment link
-        const paystackPaymentLink = 'https://paystack.shop/pay/os3n36afkw';
-        
-        // Add return URL as query parameter - redirect back to application page
-        const returnUrl = `${window.location.origin}/application`;
-        const paymentUrl = `${paystackPaymentLink}?callback_url=${encodeURIComponent(returnUrl)}&email=${encodeURIComponent(formData.email)}`;
-        
-        console.log('Redirecting to Paystack payment link:', paymentUrl);
-        
-        // Redirect to Paystack payment page
-        window.location.href = paymentUrl;
+        try {
+          const response = await fetch('/api/payments/initialize', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              email: formData.email,
+              amount: amountInNaira * 100, // Paystack expects kobo
+            }),
+          });
+
+          const data = await response.json();
+
+          if (!response.ok || !data.success || !data.authorization_url) {
+            console.error('Failed to initialize payment:', data);
+            alert(data.message || 'Failed to initialize payment. Please try again.');
+            return;
+          }
+
+          console.log('Redirecting to Paystack payment page:', data.authorization_url);
+          window.location.href = data.authorization_url;
+        } catch (initError) {
+          console.error('Error initializing Paystack payment:', initError);
+          alert('An error occurred while initializing payment. Please try again.');
+        }
       } else {
         alert('Unable to proceed with payment. Please try again.');
       }
@@ -505,6 +544,19 @@ export default function ApplicationPage() {
 
   const currentStepIndex = steps.findIndex(s => s.id === currentStep);
 
+  const goToStep = (stepId: ApplicationStep) => {
+    // On the requirements step, user must accept before navigating away
+    if (currentStep === 'requirements' && stepId !== 'requirements' && !acceptedRequirements) {
+      alert("Please read and accept the requirements before proceeding.");
+      return;
+    }
+
+    setCurrentStep(stepId);
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   const handleFileUpload = (field: keyof ApplicationData, file: File) => {
     if (file.size > 5 * 1024 * 1024) {
       alert('File size must be less than 5MB');
@@ -525,12 +577,18 @@ export default function ApplicationPage() {
   const handleNext = () => {
     if (currentStepIndex < steps.length - 1) {
       setCurrentStep(steps[currentStepIndex + 1].id);
+      if (typeof window !== 'undefined') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
     }
   };
 
   const handlePrevious = () => {
     if (currentStepIndex > 0) {
       setCurrentStep(steps[currentStepIndex - 1].id);
+      if (typeof window !== 'undefined') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
     }
   };
 
@@ -558,14 +616,92 @@ export default function ApplicationPage() {
     }
   };
 
+  // Load programs for the application (optionally scoped to a specific service)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const serviceSlug = urlParams.get('service');
+    const programSlug = urlParams.get('program');
+
+    const fetchPrograms = async () => {
+      try {
+        setProgramsLoading(true);
+        setProgramsError(null);
+
+        const endpoint = serviceSlug
+          ? `/api/services/${serviceSlug}/programs`
+          : '/api/programs';
+
+        const response = await fetch(endpoint);
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+          const message =
+            data?.message ||
+            `Failed to fetch programs${serviceSlug ? ' for selected service' : ''}`;
+          setProgramsError(message);
+          return;
+        }
+
+        const fetchedPrograms = Array.isArray(data.programs) ? data.programs : [];
+        setPrograms(fetchedPrograms);
+
+        // If a specific program slug is provided, pre-select that program
+        if (programSlug) {
+          const matchedProgram = fetchedPrograms.find(
+            (p: any) => p.slug === programSlug
+          );
+          if (matchedProgram) {
+            setSelectedProgram(matchedProgram);
+            setFormData(prev => ({
+              ...prev,
+              programChoice: matchedProgram.title || prev.programChoice,
+            }));
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching programs for application:', error);
+        setProgramsError('Error loading programs. Please try again.');
+      } finally {
+        setProgramsLoading(false);
+      }
+    };
+
+    fetchPrograms();
+  }, []);
+
+  // Helper to get the numeric application fee in Naira for Paystack
+  const getApplicationPriceInNaira = (): number => {
+    const fee = selectedProgram?.fee;
+    if (fee && typeof fee === 'string' && fee.trim() !== '') {
+      const numeric = parseInt(fee.replace(/[₦,\s]/g, ''), 10);
+      if (!isNaN(numeric) && numeric > 0) {
+        return numeric;
+      }
+    }
+    // Default application fee if no valid fee is set on the program
+    return 25000;
+  };
+
+  // Helper to format the fee for display in the payment section
+  const getApplicationFeeDisplay = () => {
+    const amount = getApplicationPriceInNaira();
+    return `₦${amount.toLocaleString()}`;
+  };
+
+  const applicationFeeDisplay = getApplicationFeeDisplay();
+
   const renderStepContent = () => {
     switch (currentStep) {
       case 'requirements':
         return (
           <div className="space-y-6">
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Application Requirements</h2>
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-white text-center">2025-2026  ACESPED APPLICATION FORM FOR POSTGRADUATE PROGRAMMES</h2>
+            <p>Welcome to the application page of the Africa Centre of Excellence for Sustainable Energy and Power Development (ACESPED).</p>
+            <p>You would be expected to submit the following types of  information during the course of your application:</p>            
             <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
-              <h3 className="text-xl font-semibold text-blue-900 dark:text-blue-100 mb-4">Before You Begin</h3>
+              <h3 className="text-xl font-semibold text-blue-900 dark:text-blue-100 mb-4">You would be expected to submit the following types of  information during the course of your application:</h3>
               <ul className="space-y-3">
                 <li className="flex items-start">
                   <Check className="h-5 w-5 text-green-600 mr-3 mt-0.5" />
@@ -573,36 +709,73 @@ export default function ApplicationPage() {
                 </li>
                 <li className="flex items-start">
                   <Check className="h-5 w-5 text-green-600 mr-3 mt-0.5" />
-                  <span className="text-gray-700 dark:text-gray-300">Previous academic transcripts and certificates (PDF format)</span>
+                  <span className="text-gray-700 dark:text-gray-300">Personal Information (including a clear passport photograph in PNG or JPEG format, and a Passport Number for International Applicants).</span>
                 </li>
                 <li className="flex items-start">
                   <Check className="h-5 w-5 text-green-600 mr-3 mt-0.5" />
-                  <span className="text-gray-700 dark:text-gray-300">Research proposal (for graduate programs)</span>
+                  <span className="text-gray-700 dark:text-gray-300">Next of Kin Details</span>
                 </li>
                 <li className="flex items-start">
                   <Check className="h-5 w-5 text-green-600 mr-3 mt-0.5" />
-                  <span className="text-gray-700 dark:text-gray-300">Two referee contacts (email and phone)</span>
+                  <span className="text-gray-700 dark:text-gray-300">Intended Programme Details</span>
                 </li>
                 <li className="flex items-start">
                   <Check className="h-5 w-5 text-green-600 mr-3 mt-0.5" />
-                  <span className="text-gray-700 dark:text-gray-300">Payment information and proof of payment</span>
+                  <span className="text-gray-700 dark:text-gray-300">Previous Educational Background.</span>
                 </li>
                 <li className="flex items-start">
                   <Check className="h-5 w-5 text-green-600 mr-3 mt-0.5" />
-                  <span className="text-gray-700 dark:text-gray-300">Recent passport photograph (JPG/PNG, max 2MB)</span>
+                  <span className="text-gray-700 dark:text-gray-300">Employment Details</span>
                 </li>
+                <li className="flex items-start">
+                  <Check className="h-5 w-5 text-green-600 mr-3 mt-0.5" />
+                  <span className="text-gray-700 dark:text-gray-300">Research Proposal - A draft two paged research proposal containing a proposed  research title, statement of problem, aim, objectives, proposed methodology, </span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="h-5 w-5 text-green-600 mr-3 mt-0.5" />
+                  <span className="text-gray-700 dark:text-gray-300">Two recommendation letters signed by your previous Supervisors (in PDF format)</span>
+                </li>                
               </ul>
             </div>
 
             <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6">
-              <h3 className="text-xl font-semibold text-yellow-900 dark:text-yellow-100 mb-4">Important Notes</h3>
-              <ul className="space-y-2 text-gray-700 dark:text-gray-300">
-                <li>• Application fee: ₦25,000 (non-refundable)</li>
-                <li>• All documents should be clear and readable</li>
-                <li>• Application deadline: December 31, 2025</li>
-                <li>• Processing time: 2-4 weeks after submission</li>
-                <li>• Keep your application reference number for future correspondence</li>
+              <h3 className="text-xl font-semibold text-yellow-900 dark:text-yellow-100 mb-4">List of Attachments Required</h3>
+              <h4>For avoidance of doubt, please get the following files ready before you commence the application process:</h4>
+              
+              <ul className="space-y-2 mt-4 text-gray-700 dark:text-gray-300">               
+                <li className="flex items-start">
+                  <Check className="h-5 w-5 text-yellow-600 mr-3 mt-0.5" />
+                  <span className="text-gray-700 dark:text-gray-300">Passport ID Data Page/ National ID Information (PDF format)</span>
+                </li>  
+                <li className="flex items-start">
+                  <Check className="h-5 w-5 text-yellow-600 mr-3 mt-0.5" />
+                  <span className="text-gray-700 dark:text-gray-300">Passport Photograph (PNG/JPEG format)</span>
+                </li>  
+                <li className="flex items-start">
+                  <Check className="h-5 w-5 text-yellow-600 mr-3 mt-0.5" />
+                  <span className="text-gray-700 dark:text-gray-300">Unofficial Transcript for Bachelors/Masters Certificates merged as one document (PDF format)</span>
+                </li>  
+                <li className="flex items-start">
+                  <Check className="h-5 w-5 text-yellow-600 mr-3 mt-0.5" />
+                  <span className="text-gray-700 dark:text-gray-300">A copy of your Bachelors and/or Masters Project Report (PDF format)</span>
+                </li>  
+                <li className="flex items-start">
+                  <Check className="h-5 w-5 text-yellow-600 mr-3 mt-0.5" />
+                  <span className="text-gray-700 dark:text-gray-300">Two Recommendation letters (PDF format)</span>
+                </li> 
+                <li className="flex items-start">
+                  <Check className="h-5 w-5 text-yellow-600 mr-3 mt-0.5" />
+                  <span className="text-gray-700 dark:text-gray-300">A Two paged Research Proposal (PDF format)</span>
+                </li>                
               </ul>
+            </div>
+
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
+              <h3 className="text-xl font-semibold text-blue-900 dark:text-blue-100 mb-4">The Application Deadline is December 2025</h3>
+              <h2>Prof. Cosmas Anyanwu</h2>
+              <p>Chairman, Admission Committee,</p>
+              <p>Africa Centre of Excellence for Sustainable Energy and Power Development (ACESPED),</p>
+              <p>University of Nigeria Nsukka.</p>
             </div>
 
             <div className="flex items-center">
@@ -669,7 +842,20 @@ export default function ApplicationPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="col-span-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Surname *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.surname}
+                  onChange={(e) => setFormData({ ...formData, surname: e.target.value })}
+                  className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 dark:text-white"
+                  placeholder="Doe"
+                />
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   First Name *
@@ -694,22 +880,20 @@ export default function ApplicationPage() {
                   className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 dark:text-white"
                   placeholder="Michael"
                 />
-              </div>
+              </div> 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Surname *
+                  Maiden Name
                 </label>
                 <input
                   type="text"
-                  required
-                  value={formData.surname}
-                  onChange={(e) => setFormData({ ...formData, surname: e.target.value })}
+                  value={formData.maidenName}
+                  onChange={(e) => setFormData({ ...formData, maidenName: e.target.value })}
                   className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 dark:text-white"
-                  placeholder="Doe"
+                  placeholder="Enter maiden name if applicable"
                 />
-              </div>
+              </div>             
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -769,7 +953,27 @@ export default function ApplicationPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Nationality *
+                  Marital Status *
+                </label>
+                <select
+                  required
+                  value={formData.maritalStatus}
+                  onChange={(e) => setFormData({ ...formData, maritalStatus: e.target.value })}
+                  className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 dark:text-white"
+                >
+                  <option value="">Select Marital Status</option>
+                  <option value="Single">Single</option>
+                  <option value="Married">Married</option>
+                  <option value="Divorced">Divorced</option>
+                  <option value="Widowed">Widowed</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Country of Residence *
                 </label>
                 <select
                   required
@@ -778,7 +982,6 @@ export default function ApplicationPage() {
                   className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 dark:text-white overflow-y-auto"
                   style={{ height: 'auto' }}
                 >
-                  <option value="">Select Nationality</option>
                   {Object.keys(locationData).sort().map((country) => (
                     <option key={country} value={country}>
                       {country}
@@ -786,12 +989,27 @@ export default function ApplicationPage() {
                   ))}
                 </select>
               </div>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Country *
+                  Residential Address *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 dark:text-white"
+                  placeholder="Street address, apartment, suite, etc."
+                />
+              </div>                
+              
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Nationality*
                 </label>
                 <select
                   required
@@ -810,7 +1028,7 @@ export default function ApplicationPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  State/Province *
+                  State of Origin
                 </label>
                 <select
                   required
@@ -830,7 +1048,7 @@ export default function ApplicationPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  City/Local Government *
+                  Local Government Area or Municipality
                 </label>
                 <select
                   required
@@ -848,34 +1066,80 @@ export default function ApplicationPage() {
                   ))}
                 </select>
               </div>
-            </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Home Town *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.homeTown}
+                  onChange={(e) => setFormData({ ...formData, homeTown: e.target.value })}
+                  className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 dark:text-white"
+                  placeholder="Enter your home town"
+                />
+              </div>
+              <div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    National ID No (NIN/International Passport Number) *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.nationalId}
+                    onChange={(e) => setFormData({ ...formData, nationalId: e.target.value })}
+                    className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 dark:text-white mb-3"
+                    placeholder="Enter your NIN or International Passport Number"
+                  />
+                </div>
+                <div className="flex items-center space-x-4">
+                  <input
+                    type="file"
+                    id="national-id-upload"
+                    accept="application/pdf,image/*"
+                    onChange={(e) => e.target.files && handleFileUpload('nationalIdFile', e.target.files[0])}
+                    className="hidden"
+                    required
+                  />
+                  <label
+                    htmlFor="national-id-upload"
+                    className="cursor-pointer inline-flex items-center px-4 py-2.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                  >
+                    <Upload className="h-5 w-5 mr-2" />
+                    {formData.nationalIdFile ? 'Change Document' : 'Upload NIN/Passport'}
+                  </label>
+                  {formData.nationalIdFile && (
+                    <span className="text-sm text-green-600 dark:text-green-400 flex items-center">
+                      <Check className="h-4 w-4 mr-1" />
+                      Document uploaded
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                  Upload a copy of your NIN card or International Passport data page. Max size: 5MB. Formats: PDF, JPG, PNG
+                </p>
+              </div>
+            </div>      
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Residential Address *
+                Religion *
               </label>
-              <input
-                type="text"
+              <select
                 required
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                value={formData.religion}
+                onChange={(e) => setFormData({ ...formData, religion: e.target.value })}
                 className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 dark:text-white"
-                placeholder="Street address, apartment, suite, etc."
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Postal Code
-              </label>
-              <input
-                type="text"
-                value={formData.postalCode}
-                onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
-                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 dark:text-white"
-                placeholder="100001"
-              />
-            </div>
+              >
+                <option value="">Select Religion</option>
+                <option value="Christianity">Christianity</option>
+                <option value="Islam">Islam</option>
+                <option value="Traditional">Traditional</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>           
           </div>
         );
 
@@ -1031,16 +1295,31 @@ export default function ApplicationPage() {
               <select
                 required
                 value={formData.programChoice}
-                onChange={(e) => setFormData({ ...formData, programChoice: e.target.value })}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setFormData({ ...formData, programChoice: value });
+                  const matched = programs.find((p: any) => p.title === value);
+                  setSelectedProgram(matched || null);
+                }}
                 className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 dark:text-white"
               >
-                <option value="">Select Program</option>
-                <option value="Electric Power Systems Development">Electric Power Systems Development</option>
-                <option value="Renewable Energy & Waste-to-Energy">Renewable Energy & Waste-to-Energy</option>
-                <option value="Energy Resources Assessment">Energy Resources Assessment & Forecasting</option>
-                <option value="Sustainable Energy Materials">Sustainable Energy Materials</option>
-                <option value="Energy Policy & Management">Energy Policy, Regulation & Management</option>
+                <option value="">
+                  {programsLoading
+                    ? 'Loading programs...'
+                    : 'Select Program'}
+                </option>
+                {!programsLoading &&
+                  programs.map((program: any) => (
+                    <option key={program.id} value={program.title}>
+                      {program.title}
+                    </option>
+                  ))}
               </select>
+              {!programsLoading && programsError && (
+                <p className="mt-2 text-xs text-red-600 dark:text-red-400">
+                  {programsError}
+                </p>
+              )}
             </div>
 
             <div>
@@ -1510,11 +1789,13 @@ export default function ApplicationPage() {
               Complete your application by making the required payment via Paystack
             </p>
 
-            <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 rounded-lg p-8">
+              <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 rounded-lg p-8">
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h3 className="text-3xl font-bold text-green-900 dark:text-green-100">Application Fee</h3>
-                  <p className="text-5xl font-bold text-green-700 dark:text-green-300 mt-2">₦25,000</p>
+                  <p className="text-5xl font-bold text-green-700 dark:text-green-300 mt-2">
+                    {applicationFeeDisplay}
+                  </p>
                 </div>
                 <div className="bg-white dark:bg-gray-800 p-4 rounded-full">
                   <CreditCard className="h-16 w-16 text-green-600" />
@@ -1561,7 +1842,7 @@ export default function ApplicationPage() {
                     className="w-full px-8 py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-semibold text-lg hover:shadow-xl hover:scale-105 transition-all duration-200 flex items-center justify-center cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-none"
                   >
                     <CreditCard className="h-6 w-6 mr-3" />
-                    Pay ₦25,000 with Paystack
+                    Pay {applicationFeeDisplay} with Paystack
                   </button>
                   {(!formData.email || formData.email.trim() === '') && (
                     <p className="text-xs text-red-600 dark:text-red-400 mt-2 text-center">
@@ -1715,14 +1996,18 @@ export default function ApplicationPage() {
               
               return (
                 <div key={step.id} className="flex items-center flex-1">
-                  <div className="flex flex-col items-center flex-1">
+                  <button
+                    type="button"
+                    onClick={() => goToStep(step.id)}
+                    className="flex flex-col items-center flex-1 focus:outline-none group"
+                  >
                     <div
                       className={`w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all ${
                         isActive
                           ? 'bg-green-600 border-green-600 text-white scale-110'
                           : isCompleted
                           ? 'bg-green-600 border-green-600 text-white'
-                          : 'bg-gray-200 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400'
+                          : 'bg-gray-200 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 group-hover:border-green-500'
                       }`}
                     >
                       {isCompleted ? <Check className="h-6 w-6" /> : <Icon className="h-6 w-6" />}
@@ -1731,12 +2016,12 @@ export default function ApplicationPage() {
                       className={`mt-2 text-xs font-medium hidden md:block ${
                         isActive || isCompleted
                           ? 'text-green-600 dark:text-green-400'
-                          : 'text-gray-500 dark:text-gray-400'
+                          : 'text-gray-500 dark:text-gray-400 group-hover:text-green-600 dark:group-hover:text-green-400'
                       }`}
                     >
                       {step.title}
                     </span>
-                  </div>
+                  </button>
                   {index < steps.length - 1 && (
                     <div
                       className={`h-1 flex-1 mx-2 transition-all ${

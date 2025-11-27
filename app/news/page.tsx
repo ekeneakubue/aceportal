@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/app/components/navbar/page';
@@ -10,85 +10,155 @@ import Image2 from '@/public/images/news/2.jpg';
 import Image3 from '@/public/images/news/3.jpg';
 import { 
   Calendar, ArrowRight, Search, Filter, 
-  Clock, User, Tag, ChevronRight
+  Clock, User, Tag, ChevronRight, Loader2
 } from 'lucide-react';
 
-const newsData = [
-  {
-    id: 1,
-    category: 'Research',
-    title: 'Nigerian Army Pays Courtesy Visit To ACE-SPED, Seeks Collaboration',
-    excerpt: 'The Nigerian Army paid a courtesy visit to the Africa Center of Excellence for Sustainable Power and Energy Development (ACE-SPED) to explore potential collaboration opportunities in research and development.',
-    date: 'May 11, 2025',
-    author: 'ACE-SPED Media',
-    image: Image1,
-    content: 'The Nigerian Army paid a courtesy visit to the Africa Center of Excellence for Sustainable Power and Energy Development (ACE-SPED), University of Nigeria, Nsukka, to explore potential collaboration opportunities in research and development. The visit, led by senior military officials, focused on areas of mutual interest including renewable energy solutions, power systems development, and sustainable energy technologies that could benefit military operations and infrastructure.',
-    tags: ['Research', 'Collaboration', 'Military', 'Energy'],
-  },
-  {
-    id: 2,
-    category: 'Achievement',
-    title: 'ACE-SPED Showcases Innovations at NUC Launch of ACE Alliance and Compendium',
-    excerpt: 'The Africa Center of Excellence for Sustainable Power and Energy Development (ACE-SPED), University of Nigeria, Nsukka, participated in the National Universities Commission (NUC) launch of the ACE Alliance and Compendium.',
-    date: 'April 11, 2025',
-    author: 'ACE-SPED Media',
-    image: Image2,
-    content: 'The Africa Center of Excellence for Sustainable Power and Energy Development (ACE-SPED), University of Nigeria, Nsukka, participated in the National Universities Commission (NUC) launch of the ACE Alliance and Compendium. The event showcased various innovations and research achievements from centers of excellence across Nigeria. ACE-SPED presented its groundbreaking work in sustainable power and energy development, highlighting its contributions to addressing energy challenges in Sub-Saharan Africa.',
-    tags: ['Achievement', 'Innovation', 'NUC', 'Excellence'],
-  },
-  {
-    id: 3,
-    category: 'Achievement',
-    title: 'UNN secures over $3 million grant to boost ICT development',
-    excerpt: 'The Acting Vice-Chancellor of the University of Nigeria, Prof. Oguejiofor T. Ujam on Tuesday, July 1, 2025, received an award letter confirming over $3 million ICT-Development Grant.',
-    date: 'July 1, 2025',
-    author: 'UNN Media',
-    image: Image3,
-    content: 'The Acting Vice-Chancellor of the University of Nigeria, Prof. Oguejiofor T. Ujam on Tuesday, July 1, 2025, received an award letter confirming over $3 million ICT-Development Grant. This significant funding will be used to enhance information and communication technology infrastructure, support research initiatives, and improve digital learning capabilities across the university. The grant represents a major milestone in the university\'s commitment to technological advancement and innovation.',
-    tags: ['Grant', 'ICT', 'Development', 'Funding'],
-  },
-  {
-    id: 4,
-    category: 'Research',
-    title: 'New Research Initiative on Renewable Energy Solutions',
-    excerpt: 'ACE-SPED launches a groundbreaking research initiative focused on developing innovative renewable energy solutions for rural communities in Sub-Saharan Africa.',
-    date: 'June 15, 2025',
-    author: 'Research Team',
-    image: Image1,
-    content: 'ACE-SPED has launched a groundbreaking research initiative focused on developing innovative renewable energy solutions for rural communities in Sub-Saharan Africa. The project aims to address energy poverty by creating affordable, sustainable power systems that can be deployed in remote areas. This initiative brings together researchers, engineers, and community stakeholders to develop practical solutions that will improve the quality of life for millions of people.',
-    tags: ['Research', 'Renewable Energy', 'Rural Development', 'Sustainability'],
-  },
-  {
-    id: 5,
-    category: 'Event',
-    title: 'Annual Energy Summit 2025: Call for Papers',
-    excerpt: 'ACE-SPED announces the Annual Energy Summit 2025, inviting researchers, practitioners, and policymakers to submit papers on sustainable energy development.',
-    date: 'May 20, 2025',
-    author: 'Events Committee',
-    image: Image2,
-    content: 'ACE-SPED is pleased to announce the Annual Energy Summit 2025, a premier conference bringing together researchers, practitioners, and policymakers to discuss the latest developments in sustainable energy. The summit will feature keynote presentations, panel discussions, and technical sessions covering topics such as renewable energy technologies, energy policy, power systems, and sustainable development. We invite submissions of research papers, case studies, and innovative solutions.',
-    tags: ['Event', 'Conference', 'Call for Papers', 'Energy Summit'],
-  },
-  {
-    id: 6,
-    category: 'Achievement',
-    title: 'ACE-SPED Students Win International Research Competition',
-    excerpt: 'Students from ACE-SPED have won first place in an international research competition for their innovative work on energy storage systems.',
-    date: 'April 5, 2025',
-    author: 'Student Affairs',
-    image: Image3,
-    content: 'Students from ACE-SPED have achieved a remarkable victory by winning first place in an international research competition for their innovative work on energy storage systems. The winning project demonstrated a novel approach to improving battery efficiency and sustainability, addressing critical challenges in renewable energy storage. This achievement highlights the quality of research and innovation at ACE-SPED and showcases the talent of our students on the global stage.',
-    tags: ['Achievement', 'Students', 'Competition', 'Innovation'],
-  },
-];
+interface NewsItem {
+  id: string;
+  category: string;
+  title: string;
+  excerpt: string;
+  date: string;
+  author: string;
+  image: string | any;
+  content: string;
+  tags: string[];
+  slug: string;
+}
 
-const categories = ['All', 'Research', 'Achievement', 'Event'];
+const categories = ['All', 'Research', 'Achievement', 'Event', 'Announcement', 'Collaboration'];
+
+// Helper function to format category from enum to display format
+const formatCategory = (category: string): string => {
+  return category.charAt(0) + category.slice(1).toLowerCase();
+};
+
+// Helper function to format date
+const formatDate = (date: Date | null | undefined): string => {
+  if (!date) return '';
+  const d = new Date(date);
+  return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+};
+
+// Helper function to get image
+const getImage = (imagePath: string | null | undefined, index: number = 0) => {
+  // If no image path, use default based on index
+  if (!imagePath) {
+    const defaults = [Image1, Image2, Image3];
+    return defaults[index % defaults.length];
+  }
+  
+  // If it's already an imported image object, return it
+  if (typeof imagePath === 'object') return imagePath;
+  
+  // If it's a base64 encoded image (starts with data:image/), return it directly
+  if (typeof imagePath === 'string' && imagePath.startsWith('data:image/')) {
+    return imagePath;
+  }
+  
+  // If it's a string path starting with /, it's a public path - use it directly
+  if (typeof imagePath === 'string' && imagePath.startsWith('/')) {
+    return imagePath;
+  }
+  
+  // If it's a full URL (http:// or https://), use it directly
+  if (typeof imagePath === 'string' && (imagePath.startsWith('http://') || imagePath.startsWith('https://'))) {
+    return imagePath;
+  }
+  
+  // If it's a string but not a path, try to match specific filenames
+  if (typeof imagePath === 'string') {
+    const lowerPath = imagePath.toLowerCase();
+    // Match exact filenames (like "1.jpg", "news/1.jpg", etc.)
+    if (lowerPath.includes('/1.jpg') || lowerPath.endsWith('1.jpg') || lowerPath === '1') {
+      return Image1;
+    }
+    if (lowerPath.includes('/2.jpg') || lowerPath.endsWith('2.jpg') || lowerPath === '2') {
+      return Image2;
+    }
+    if (lowerPath.includes('/3.jpg') || lowerPath.endsWith('3.jpg') || lowerPath === '3') {
+      return Image3;
+    }
+    // If it doesn't match known images but is a relative path, prepend /
+    if (!lowerPath.startsWith('/') && !lowerPath.startsWith('http') && !lowerPath.startsWith('data:')) {
+      return '/' + imagePath;
+    }
+  }
+  
+  // Return as-is for other cases
+  return imagePath;
+};
+
+// Helper function to check if image needs unoptimized prop
+const isUnoptimizedImage = (imageSrc: string | any): boolean => {
+  if (typeof imageSrc === 'object') return false; // Imported images
+  if (typeof imageSrc === 'string') {
+    // Base64 images or external URLs need unoptimized
+    return imageSrc.startsWith('data:') || 
+           imageSrc.startsWith('http://') || 
+           imageSrc.startsWith('https://');
+  }
+  return false;
+};
 
 export default function NewsPage() {
   const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedNews, setSelectedNews] = useState<typeof newsData[0] | null>(null);
+  const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
+  const [newsData, setNewsData] = useState<NewsItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchNews();
+  }, []);
+
+  const fetchNews = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/news');
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('News API response:', data);
+      
+      if (data.success && data.news) {
+        // Transform database data to component format
+        const news = Array.isArray(data.news) ? data.news.map((item: any, index: number) => ({
+          id: item.id,
+          slug: item.slug,
+          category: formatCategory(item.category),
+          title: item.title,
+          excerpt: item.excerpt,
+          date: formatDate(item.publishedAt || item.createdAt),
+          author: item.author,
+          image: getImage(item.image, index),
+          content: item.content,
+          tags: Array.isArray(item.tags) 
+            ? item.tags 
+            : typeof item.tags === 'string' 
+              ? JSON.parse(item.tags) 
+              : [],
+        })) : [];
+        console.log(`Transformed ${news.length} news items`);
+        console.log('News images:', news.map(n => ({ title: n.title, image: typeof n.image === 'string' ? n.image : 'imported' })));
+        setNewsData(news);
+      } else {
+        console.error('Failed to fetch news:', data.message || data.error || 'Unknown error');
+        console.error('Response data:', data);
+        setNewsData([]);
+      }
+    } catch (error: any) {
+      console.error('Error fetching news:', error);
+      console.error('Error details:', error.message || error);
+      setNewsData([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredNews = newsData.filter((item) => {
     const matchesCategory = selectedCategory === 'All' || item.category === selectedCategory;
@@ -121,6 +191,7 @@ export default function NewsPage() {
                 alt={selectedNews.title}
                 fill
                 className="object-cover"
+                unoptimized={isUnoptimizedImage(selectedNews.image)}
               />
             </div>
             
@@ -186,7 +257,7 @@ export default function NewsPage() {
       <Navbar />
 
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-green-900 to-emerald-900 text-white py-20">
+      <section className="bg-linear-to-br from-green-900 to-emerald-900 text-white py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h1 className="text-4xl md:text-5xl font-bold mb-4">
@@ -239,11 +310,25 @@ export default function NewsPage() {
       {/* News Grid */}
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {filteredNews.length === 0 ? (
-            <div className="text-center py-20">
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-20">
+              <Loader2 className="h-12 w-12 text-green-600 animate-spin mb-4" />
               <p className="text-xl text-gray-500 dark:text-gray-400">
-                No news found matching your criteria.
+                Loading news...
               </p>
+            </div>
+          ) : filteredNews.length === 0 ? (
+            <div className="text-center py-20">
+              <p className="text-xl text-gray-500 dark:text-gray-400 mb-2">
+                {newsData.length === 0 
+                  ? 'No news found in the database. Please add news articles to see them here.'
+                  : 'No news found matching your criteria.'}
+              </p>
+              {newsData.length === 0 && (
+                <p className="text-sm text-gray-400 dark:text-gray-500">
+                  Make sure news articles are marked as published (isPublished: true) in the database.
+                </p>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -253,12 +338,13 @@ export default function NewsPage() {
                   onClick={() => setSelectedNews(item)}
                   className="group bg-white dark:bg-gray-800 rounded-2xl overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 cursor-pointer"
                 >
-                  <div className="relative aspect-video bg-gradient-to-br from-green-500 to-emerald-600">
+                  <div className="relative aspect-video bg-linear-to-br from-green-500 to-emerald-600">
                     <Image 
                       src={item.image} 
                       alt={item.title}
                       fill
                       className="object-cover group-hover:scale-110 transition-transform duration-300"
+                      unoptimized={isUnoptimizedImage(item.image)}
                     />
                   </div>
                   <div className="p-6">

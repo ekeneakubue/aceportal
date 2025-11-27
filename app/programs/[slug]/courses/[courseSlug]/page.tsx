@@ -1,17 +1,30 @@
 'use client'
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   ArrowLeft, Check, Clock, Users, BookOpen, 
   Globe, Award, Calendar, FileText, Target,
-  Zap, Briefcase, GraduationCap
+  Zap, Briefcase, GraduationCap, Loader2
 } from 'lucide-react';
 import { TbCurrencyNaira } from 'react-icons/tb';
 import Navbar from '@/app/components/navbar/page';
 import Footer from '@/app/components/footer/page';
 
-// Course data structure
+// Helper function to get level display name
+const getLevelDisplayName = (level: string) => {
+  const levelMap: { [key: string]: string } = {
+    'CERTIFICATE': 'Certificate',
+    'DIPLOMA': 'Diploma',
+    'BACHELORS': 'Bachelors',
+    'MASTERS': 'Masters',
+    'PHD': 'Ph.D',
+    'MASTERS_AND_PHD': 'Ph.D/M.Sc.',
+  };
+  return levelMap[level] || level.replace(/_/g, ' ');
+};
+
+// Legacy course data structure (kept for backward compatibility if needed)
 const coursesData: Record<string, any> = {
   // ACE-SPED Graduate Programs Courses
   'renewable-new-energy-systems': {
@@ -892,254 +905,6 @@ const coursesData: Record<string, any> = {
     ],
     fee: '₦140,000',
   },
-  // C-Code Studio Courses
-  'professional-video-editing': {
-    programSlug: 'ace-sped-c-code-studio',
-    programTitle: 'C-Code Studio',
-    title: 'Professional Video Editing (Adobe Premiere Pro)',
-    level: 'Certificate',
-    duration: '3 Months',
-    studyMode: 'Full-time / Part-time',
-    color: 'from-purple-500 to-pink-500',
-    overview: 'Master professional video editing using Adobe Premiere Pro. Learn industry-standard techniques for creating engaging video content.',
-    objectives: [
-      'Master Adobe Premiere Pro interface and tools',
-      'Edit videos professionally with transitions and effects',
-      'Work with audio mixing and color grading',
-      'Create professional video projects',
-      'Build a portfolio of video work',
-    ],
-    curriculum: [
-      'Introduction to Video Editing',
-      'Adobe Premiere Pro Interface',
-      'Cutting and Trimming Techniques',
-      'Transitions and Effects',
-      'Audio Editing and Mixing',
-      'Color Correction and Grading',
-      'Motion Graphics Basics',
-      'Export Settings and Formats',
-      'Portfolio Projects',
-    ],
-    requirements: [
-      'Basic computer skills',
-      'Creative mindset',
-      'Personal laptop (recommended)',
-      'No prior editing experience required',
-    ],
-    careerPaths: [
-      'Video Editor',
-      'Content Creator',
-      'YouTube Editor',
-      'Freelance Video Editor',
-      'Post-Production Specialist',
-    ],
-    fee: '₦80,000',
-  },
-  'podcast-production': {
-    programSlug: 'ace-sped-c-code-studio',
-    programTitle: 'C-Code Studio',
-    title: 'Podcast Production & Audio Engineering',
-    level: 'Certificate',
-    duration: '2 Months',
-    studyMode: 'Full-time / Part-time',
-    color: 'from-purple-500 to-pink-500',
-    overview: 'Learn the art and science of podcast production from recording to publishing. Master audio engineering fundamentals.',
-    objectives: [
-      'Set up professional podcast recording',
-      'Master audio editing and mixing',
-      'Learn podcast hosting and distribution',
-      'Develop engaging podcast content',
-      'Build a podcast brand',
-    ],
-    curriculum: [
-      'Podcast Basics & Planning',
-      'Audio Equipment Setup',
-      'Recording Techniques',
-      'Audio Editing with Audacity/Adobe Audition',
-      'Sound Design and Mixing',
-      'Podcast Hosting Platforms',
-      'Distribution & RSS Feeds',
-      'Podcast Marketing',
-      'Final Podcast Project',
-    ],
-    requirements: [
-      'Interest in audio and podcasting',
-      'Basic computer skills',
-      'Creativity and storytelling ability',
-    ],
-    careerPaths: [
-      'Podcast Producer',
-      'Audio Engineer',
-      'Content Creator',
-      'Radio Producer',
-      'Voice-over Artist',
-    ],
-    fee: '₦60,000',
-  },
-  'social-media-content-creation': {
-    programSlug: 'ace-sped-c-code-studio',
-    programTitle: 'C-Code Studio',
-    title: 'Social Media Content Creation',
-    level: 'Certificate',
-    duration: '2 Months',
-    studyMode: 'Full-time / Part-time / Online',
-    color: 'from-purple-500 to-pink-500',
-    overview: 'Master the art of creating engaging social media content that captivates audiences and drives engagement. Learn to create professional content for Instagram, Facebook, Twitter, LinkedIn, TikTok, and more.',
-    objectives: [
-      'Create compelling visual content for social media platforms',
-      'Master content planning and scheduling strategies',
-      'Understand platform-specific best practices',
-      'Develop engaging copywriting skills',
-      'Build a strong personal or brand social media presence',
-      'Analyze content performance and optimize strategies',
-    ],
-    curriculum: [
-      'Introduction to Social Media Marketing',
-      'Content Strategy & Planning',
-      'Visual Content Creation (Canva, Adobe Express)',
-      'Video Content Creation for Social Media',
-      'Copywriting for Social Media',
-      'Platform-Specific Content (Instagram, Facebook, Twitter, LinkedIn, TikTok)',
-      'Storytelling & Brand Voice',
-      'Content Calendar & Scheduling Tools',
-      'Analytics & Performance Measurement',
-      'Community Management & Engagement',
-      'Influencer Marketing Basics',
-      'Final Portfolio Project',
-    ],
-    requirements: [
-      'Basic computer skills',
-      'Access to social media accounts',
-      'Creative mindset',
-      'Interest in digital marketing and content creation',
-      'Personal laptop or smartphone',
-    ],
-    careerPaths: [
-      'Social Media Manager',
-      'Content Creator',
-      'Social Media Strategist',
-      'Digital Marketing Specialist',
-      'Community Manager',
-      'Influencer',
-      'Brand Ambassador',
-      'Freelance Content Creator',
-    ],
-    fee: '₦70,000',
-  },
-  'motion-graphics-animation': {
-    programSlug: 'ace-sped-c-code-studio',
-    programTitle: 'C-Code Studio',
-    title: 'Motion Graphics & Animation',
-    level: 'Certificate',
-    duration: '4 Months',
-    studyMode: 'Full-time / Part-time / Workshop',
-    color: 'from-purple-500 to-pink-500',
-    overview: 'Learn to create stunning motion graphics and animations for video, web, and digital media. Master industry-standard tools like After Effects, Cinema 4D, and Blender to bring your creative visions to life.',
-    objectives: [
-      'Master Adobe After Effects for motion graphics',
-      'Create dynamic animations and visual effects',
-      'Work with 3D animation software',
-      'Design animated graphics for video and web',
-      'Understand animation principles and timing',
-      'Produce professional motion graphics projects',
-      'Build a portfolio of animated work',
-    ],
-    curriculum: [
-      'Introduction to Motion Graphics',
-      'Animation Principles & Timing',
-      'Adobe After Effects Fundamentals',
-      'Keyframe Animation & Easing',
-      'Text Animation & Typography in Motion',
-      'Shape Layers & Vector Graphics',
-      'Effects & Presets',
-      '3D Animation Basics',
-      'Cinema 4D Lite / Blender Introduction',
-      'Compositing & Layering',
-      'Color Grading & Visual Effects',
-      'Motion Tracking & Stabilization',
-      'Character Animation Basics',
-      'Export Settings & Formats',
-      'Portfolio Development',
-      'Capstone Project',
-    ],
-    requirements: [
-      'Basic computer skills',
-      'Creative mindset and visual design sense',
-      'Interest in animation and motion graphics',
-      'Personal laptop (Mac or Windows)',
-      'Adobe Creative Suite access (recommended)',
-      'No prior animation experience required',
-    ],
-    careerPaths: [
-      'Motion Graphics Designer',
-      'Animator',
-      'Video Editor',
-      'Visual Effects Artist',
-      'Motion Designer',
-      'Broadcast Designer',
-      'UI/UX Animator',
-      'Freelance Motion Graphics Artist',
-      'Content Creator',
-    ],
-    fee: '₦90,000',
-  },
-  'photography-photo-editing': {
-    programSlug: 'ace-sped-c-code-studio',
-    programTitle: 'C-Code Studio',
-    title: 'Photography & Photo Editing',
-    level: 'Certificate',
-    duration: '3 Months',
-    studyMode: 'Full-time / Part-time / Workshop',
-    color: 'from-purple-500 to-pink-500',
-    overview: 'Master the art of photography and professional photo editing. Learn camera techniques, composition, lighting, and post-processing using Adobe Lightroom and Photoshop to create stunning visual content.',
-    objectives: [
-      'Master camera settings and photography fundamentals',
-      'Understand composition, lighting, and exposure',
-      'Learn professional photo editing techniques',
-      'Work with Adobe Lightroom and Photoshop',
-      'Develop a unique photographic style',
-      'Create professional photo portfolios',
-      'Apply photography skills to various genres',
-    ],
-    curriculum: [
-      'Introduction to Photography',
-      'Camera Settings & Manual Mode',
-      'Composition & Framing Techniques',
-      'Understanding Light & Exposure',
-      'Portrait Photography',
-      'Landscape & Nature Photography',
-      'Event & Wedding Photography',
-      'Product Photography',
-      'Adobe Lightroom Fundamentals',
-      'Photo Editing & Retouching',
-      'Adobe Photoshop Essentials',
-      'Color Correction & Grading',
-      'Advanced Retouching Techniques',
-      'Photo Organization & Workflow',
-      'Portfolio Development',
-      'Capstone Project',
-    ],
-    requirements: [
-      'Digital camera (DSLR or mirrorless recommended)',
-      'Basic computer skills',
-      'Creative eye and passion for photography',
-      'Personal laptop',
-      'Adobe Creative Suite access (recommended)',
-      'No prior photography experience required',
-    ],
-    careerPaths: [
-      'Professional Photographer',
-      'Portrait Photographer',
-      'Wedding Photographer',
-      'Product Photographer',
-      'Photo Editor',
-      'Retoucher',
-      'Freelance Photographer',
-      'Content Creator',
-      'Photojournalist',
-    ],
-    fee: '₦85,000',
-  },
 };
 
 export default function CourseDetailPage({ 
@@ -1148,26 +913,174 @@ export default function CourseDetailPage({
   params: Promise<{ slug: string; courseSlug: string }> 
 }) {
   const router = useRouter();
-  const { slug, courseSlug } = React.use(params);
-  const course = coursesData[courseSlug];
+  const resolvedParams = React.use(params);
+  const { slug, courseSlug } = resolvedParams;
+  const [course, setCourse] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  if (!course) {
+  useEffect(() => {
+    if (courseSlug) {
+      fetchCourse(courseSlug);
+    }
+  }, [courseSlug]);
+
+  const fetchCourse = async (courseSlugParam: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Use the course slug directly - API will handle aliases
+      const response = await fetch(`/api/courses/${courseSlugParam}`);
+      
+      // Check if response is ok before trying to parse JSON
+      if (!response.ok) {
+        // Try to parse error response, but handle if it's not JSON
+        let errorMessage = 'Failed to fetch course';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch {
+          // If response is not JSON, use status text
+          errorMessage = response.statusText || `Server error (${response.status})`;
+        }
+        console.error('Course fetch failed:', errorMessage);
+        setError(errorMessage);
+        return;
+      }
+      
+      const data = await response.json();
+      
+      if (data.success && data.course) {
+        setCourse(data.course);
+      } else {
+        console.error('Course fetch failed:', data.message || 'Unknown error');
+        setError(data.message || 'Course not found');
+      }
+    } catch (err: any) {
+      console.error('Error fetching course:', err);
+      // Handle network errors or JSON parsing errors
+      const errorMessage = err?.message?.includes('fetch') 
+        ? 'Network error. Please check your connection and try again.'
+        : 'Error loading course. Please try again later.';
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <Navbar />
-        <div className="text-center py-20">
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">Course Not Found</h1>
-          <button
-            onClick={() => router.push(`/programs/${slug}`)}
-            className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-          >
-            Back to Program
-          </button>
+        
+        {/* Breadcrumb Skeleton */}
+        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-64 animate-pulse"></div>
+          </div>
+        </div>
+
+        {/* Hero Section Skeleton */}
+        <section className="relative bg-gradient-to-br from-green-900 to-emerald-900 text-white py-12 sm:py-16 lg:py-20">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="max-w-4xl mx-auto text-center">
+              <div className="flex flex-col items-center justify-center min-h-[30vh]">
+                <Loader2 className="h-12 w-12 text-white animate-spin mb-4" />
+                <p className="text-white/90 text-lg mb-2">Loading course...</p>
+                <p className="text-white/70 text-sm">Please wait while we fetch the course details</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Quick Info Cards Skeleton */}
+        <section className="py-0 -mt-8 sm:-mt-12 relative z-10">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-xl border border-gray-200 dark:border-gray-700 animate-pulse">
+                  <div className="flex items-center">
+                    <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-lg mr-4"></div>
+                    <div className="flex-1">
+                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded mb-2 w-20"></div>
+                      <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-24"></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Content Skeleton */}
+        <section className="py-12 sm:py-16 lg:py-20 bg-white dark:bg-gray-900">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="space-y-8">
+              <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mx-auto animate-pulse"></div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-5xl mx-auto">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="bg-gray-50 dark:bg-gray-800 rounded-xl p-6 animate-pulse">
+                    <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded mb-4"></div>
+                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-5/6"></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <Footer />
+      </div>
+    );
+  }
+
+  if (error || !course) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <Navbar />
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center py-20 px-4">
+            <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-4">Course Not Found</h1>
+            <p className="text-gray-600 dark:text-gray-400 mb-2">{error || 'The course you are looking for does not exist.'}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-500 mb-6">Course slug: {courseSlug}</p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <button
+                onClick={() => router.push(`/programs/${slug || ''}`)}
+                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              >
+                Back to Program
+              </button>
+              <button
+                onClick={() => router.push('/programs')}
+                className="px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+              >
+                View All Programs
+              </button>
+            </div>
+          </div>
         </div>
         <Footer />
       </div>
     );
   }
+
+  // Map database course to display format
+  const courseData = {
+    programSlug: course.program?.slug || slug,
+    programTitle: course.program?.title || '',
+    title: course.title,
+    level: getLevelDisplayName(course.level),
+    duration: course.duration || 'N/A',
+    studyMode: course.studyMode || 'N/A',
+    color: course.program?.color || 'from-green-500 to-emerald-500',
+    overview: course.overview,
+    objectives: Array.isArray(course.objectives) ? course.objectives : [],
+    curriculum: Array.isArray(course.curriculum) ? course.curriculum : [],
+    requirements: Array.isArray(course.requirements) ? course.requirements : [],
+    careerPaths: Array.isArray(course.careerPaths) ? course.careerPaths : [],
+    fee: course.fee || 'N/A',
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -1175,83 +1088,83 @@ export default function CourseDetailPage({
 
       {/* Breadcrumb Navigation */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-            <button onClick={() => router.push('/')} className="hover:text-green-600 transition-colors">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
+          <div className="flex flex-wrap items-center text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+            <button onClick={() => router.push('/')} className="hover:text-green-600 transition-colors break-words">
               Home
             </button>
-            <span className="mx-2">/</span>
-            <button onClick={() => router.push('/programs')} className="hover:text-green-600 transition-colors">
+            <span className="mx-1 sm:mx-2">/</span>
+            <button onClick={() => router.push('/programs')} className="hover:text-green-600 transition-colors break-words">
               Programs
             </button>
-            <span className="mx-2">/</span>
-            <button onClick={() => router.push(`/programs/${course.programSlug}`)} className="hover:text-green-600 transition-colors">
-              {course.programTitle}
+            <span className="mx-1 sm:mx-2">/</span>
+            <button onClick={() => router.push(`/programs/${courseData.programSlug}`)} className="hover:text-green-600 transition-colors break-words">
+              {courseData.programTitle}
             </button>
-            <span className="mx-2">/</span>
-            <span className="text-gray-900 dark:text-white font-medium">{course.title}</span>
+            <span className="mx-1 sm:mx-2">/</span>
+            <span className="text-gray-900 dark:text-white font-medium break-words">{courseData.title}</span>
           </div>
         </div>
       </div>
 
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-green-900 to-emerald-900 text-white py-16">
+      <section className="relative bg-gradient-to-br from-green-900 to-emerald-900 text-white py-12 sm:py-16 lg:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto text-center">
-            <span className="inline-block px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full text-sm font-semibold mb-4">
-              {course.level}
+            <span className="inline-block px-3 sm:px-4 py-1.5 sm:py-2 bg-white/20 backdrop-blur-sm rounded-full text-xs sm:text-sm font-semibold mb-4 sm:mb-6">
+              {courseData.level}
             </span>
-            <h1 className="text-4xl md:text-5xl font-bold mb-6">{course.title}</h1>
-            <p className="text-xl text-white/90 leading-relaxed">{course.overview}</p>
+            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6 break-words">{courseData.title}</h1>
+            <p className="text-base sm:text-lg md:text-xl text-white/90 leading-relaxed break-words max-w-3xl mx-auto">{courseData.overview}</p>
           </div>
         </div>
       </section>
 
       {/* Quick Info Cards */}
-      <section className="py-0 -mt-12 relative z-10">
+      <section className="py-0 -mt-8 sm:-mt-12 relative z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-xl border border-gray-200 dark:border-gray-700">
-              <div className="flex items-center mb-3">
-                <div className="bg-green-100 dark:bg-green-900 p-3 rounded-lg mr-4">
-                  <Clock className="h-6 w-6 text-green-600 dark:text-green-400" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-xl border border-gray-200 dark:border-gray-700 flex flex-col h-full">
+              <div className="flex items-start">
+                <div className="bg-green-100 dark:bg-green-900 p-2 sm:p-3 rounded-lg mr-3 sm:mr-4 flex-shrink-0">
+                  <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-green-600 dark:text-green-400" />
                 </div>
-                <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Duration</p>
-                  <p className="text-lg font-bold text-gray-900 dark:text-white">{course.duration}</p>
-                </div>
-              </div>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-xl border border-gray-200 dark:border-gray-700">
-              <div className="flex items-center mb-3">
-                <div className="bg-blue-100 dark:bg-blue-900 p-3 rounded-lg mr-4">
-                  <Users className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Study Mode</p>
-                  <p className="text-lg font-bold text-gray-900 dark:text-white">{course.studyMode}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Duration</p>
+                  <p className="text-base sm:text-lg font-bold text-gray-900 dark:text-white break-words leading-tight">{courseData.duration || 'N/A'}</p>
                 </div>
               </div>
             </div>
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-xl border border-gray-200 dark:border-gray-700">
-              <div className="flex items-center mb-3">
-                <div className="bg-purple-100 dark:bg-purple-900 p-3 rounded-lg mr-4">
-                  <GraduationCap className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-xl border border-gray-200 dark:border-gray-700 flex flex-col h-full">
+              <div className="flex items-start">
+                <div className="bg-blue-100 dark:bg-blue-900 p-2 sm:p-3 rounded-lg mr-3 sm:mr-4 flex-shrink-0">
+                  <Users className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 dark:text-blue-400" />
                 </div>
-                <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Level</p>
-                  <p className="text-lg font-bold text-gray-900 dark:text-white">{course.level}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Study Mode</p>
+                  <p className="text-base sm:text-lg font-bold text-gray-900 dark:text-white break-words leading-tight">{courseData.studyMode || 'N/A'}</p>
                 </div>
               </div>
             </div>
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-xl border border-gray-200 dark:border-gray-700">
-              <div className="flex items-center mb-3">
-                <div className="bg-orange-100 dark:bg-orange-900 p-3 rounded-lg mr-4">
-                  <TbCurrencyNaira className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-xl border border-gray-200 dark:border-gray-700 flex flex-col h-full">
+              <div className="flex items-start">
+                <div className="bg-purple-100 dark:bg-purple-900 p-2 sm:p-3 rounded-lg mr-3 sm:mr-4 flex-shrink-0">
+                  <GraduationCap className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600 dark:text-purple-400" />
                 </div>
-                <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Course Fee</p>
-                  <p className="text-lg font-bold text-gray-900 dark:text-white">{course.fee}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Level</p>
+                  <p className="text-base sm:text-lg font-bold text-gray-900 dark:text-white break-words leading-tight">{courseData.level || 'N/A'}</p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-xl border border-gray-200 dark:border-gray-700 flex flex-col h-full">
+              <div className="flex items-start">
+                <div className="bg-orange-100 dark:bg-orange-900 p-2 sm:p-3 rounded-lg mr-3 sm:mr-4 flex-shrink-0">
+                  <TbCurrencyNaira className="h-5 w-5 sm:h-6 sm:w-6 text-orange-600 dark:text-orange-400" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Course Fee</p>
+                  <p className="text-base sm:text-lg font-bold text-gray-900 dark:text-white break-words leading-tight">{courseData.fee || 'N/A'}</p>
                 </div>
               </div>
             </div>
@@ -1260,165 +1173,181 @@ export default function CourseDetailPage({
       </section>
 
       {/* Learning Objectives */}
-      <section className="py-20 bg-white dark:bg-gray-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-              What You'll Learn
-            </h2>
-            <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-              Master the essential skills and knowledge to excel in this field
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
-            {course.objectives.map((objective: string, index: number) => (
-              <div key={index} className="flex items-start bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl p-6 border border-green-100 dark:border-green-800">
-                <div className="bg-green-600 text-white rounded-full w-8 h-8 flex items-center justify-center mr-4 flex-shrink-0 font-bold">
-                  {index + 1}
+      {courseData.objectives && courseData.objectives.length > 0 && (
+        <section className="pt-16 sm:pt-20 lg:pt-24 pb-12 sm:pb-16 lg:pb-20 bg-white dark:bg-gray-900">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-8 sm:mb-12">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                What You'll Learn
+              </h2>
+              <p className="text-base sm:text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+                Master the essential skills and knowledge to excel in this field
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 max-w-5xl mx-auto">
+              {courseData.objectives.map((objective: string, index: number) => (
+                <div key={index} className="flex items-start bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl p-4 sm:p-6 border border-green-100 dark:border-green-800">
+                  <div className="bg-green-600 text-white rounded-full w-8 h-8 flex items-center justify-center mr-3 sm:mr-4 flex-shrink-0 font-bold text-sm">
+                    {index + 1}
+                  </div>
+                  <p className="text-sm sm:text-base text-gray-700 dark:text-gray-300 leading-relaxed break-words">{objective}</p>
                 </div>
-                <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{objective}</p>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Curriculum */}
-      <section className="py-20 bg-gray-50 dark:bg-gray-950">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-              Course Curriculum
-            </h2>
-            <p className="text-lg text-gray-600 dark:text-gray-400">
-              Comprehensive syllabus covering all essential topics
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-5xl mx-auto">
-            {course.curriculum.map((module: string, index: number) => (
-              <div key={index} className="bg-white dark:bg-gray-800 rounded-xl p-5 flex items-center hover:shadow-lg transition-shadow border border-gray-200 dark:border-gray-700">
-                <div className="bg-gradient-to-br from-green-600 to-emerald-600 text-white rounded-lg w-12 h-12 flex items-center justify-center mr-4 flex-shrink-0 font-bold text-lg">
-                  {index + 1}
+      {courseData.curriculum && courseData.curriculum.length > 0 && (
+        <section className={`py-12 sm:py-16 lg:py-20 ${courseData.objectives && courseData.objectives.length > 0 ? 'bg-gray-50 dark:bg-gray-950' : 'bg-white dark:bg-gray-900'}`}>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-8 sm:mb-12">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                Course Curriculum
+              </h2>
+              <p className="text-base sm:text-lg text-gray-600 dark:text-gray-400">
+                Comprehensive syllabus covering all essential topics
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 max-w-5xl mx-auto">
+              {courseData.curriculum.map((module: string, index: number) => (
+                <div key={index} className="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-5 flex items-center hover:shadow-lg transition-shadow border border-gray-200 dark:border-gray-700">
+                  <div className="bg-gradient-to-br from-green-600 to-emerald-600 text-white rounded-lg w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center mr-3 sm:mr-4 flex-shrink-0 font-bold text-sm sm:text-lg">
+                    {index + 1}
+                  </div>
+                  <p className="text-sm sm:text-base text-gray-900 dark:text-white font-medium break-words">{module}</p>
                 </div>
-                <p className="text-gray-900 dark:text-white font-medium">{module}</p>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Requirements & Career Paths */}
-      <section className="py-20 bg-white dark:bg-gray-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
-            <div>
-              <div className="mb-8">
-                <div className="flex items-center mb-4">
-                  <div className="bg-blue-100 dark:bg-blue-900 p-3 rounded-lg mr-3">
-                    <FileText className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-                  </div>
-                  <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
-                    Entry Requirements
-                  </h2>
-                </div>
-                <p className="text-gray-600 dark:text-gray-400 mb-6">
-                  Prerequisites to enroll in this course
-                </p>
-              </div>
-              <div className="space-y-4">
-                {course.requirements.map((req: string, index: number) => (
-                  <div key={index} className="flex items-start bg-gray-50 dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700">
-                    <div className="bg-green-100 dark:bg-green-900 rounded-full p-1 mr-4 flex-shrink-0">
-                      <Check className="h-5 w-5 text-green-600 dark:text-green-400" />
+      {(courseData.requirements && courseData.requirements.length > 0) || (courseData.careerPaths && courseData.careerPaths.length > 0) ? (
+        <section className={`py-12 sm:py-16 lg:py-20 ${courseData.curriculum && courseData.curriculum.length > 0 ? 'bg-white dark:bg-gray-900' : courseData.objectives && courseData.objectives.length > 0 ? 'bg-gray-50 dark:bg-gray-950' : 'bg-white dark:bg-gray-900'}`}>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-10 lg:gap-12 xl:gap-16">
+              {courseData.requirements && courseData.requirements.length > 0 && (
+                <div className="flex flex-col">
+                  <div className="mb-6 sm:mb-8">
+                    <div className="flex items-center mb-3 sm:mb-4">
+                      <div className="bg-blue-100 dark:bg-blue-900 p-2 sm:p-3 rounded-lg mr-2 sm:mr-3 flex-shrink-0">
+                        <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white break-words">
+                        Entry Requirements
+                      </h2>
                     </div>
-                    <span className="text-gray-700 dark:text-gray-300 leading-relaxed">{req}</span>
+                    <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-4 sm:mb-6">
+                      Prerequisites to enroll in this course
+                    </p>
                   </div>
-                ))}
-              </div>
-            </div>
+                  <div className="space-y-3 sm:space-y-4 flex-1">
+                    {courseData.requirements.map((req: string, index: number) => (
+                      <div key={index} className="flex items-start bg-gray-50 dark:bg-gray-800 rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-gray-700">
+                        <div className="bg-green-100 dark:bg-green-900 rounded-full p-1 mr-3 sm:mr-4 flex-shrink-0 mt-0.5">
+                          <Check className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 dark:text-green-400" />
+                        </div>
+                        <span className="text-sm sm:text-base text-gray-700 dark:text-gray-300 leading-relaxed break-words flex-1">{req}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-            <div>
-              <div className="mb-8">
-                <div className="flex items-center mb-4">
-                  <div className="bg-purple-100 dark:bg-purple-900 p-3 rounded-lg mr-3">
-                    <Briefcase className="h-6 w-6 text-purple-600 dark:text-purple-400" />
-                  </div>
-                  <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
-                    Career Opportunities
-                  </h2>
-                </div>
-                <p className="text-gray-600 dark:text-gray-400 mb-6">
-                  Potential career paths after completing this course
-                </p>
-              </div>
-              <div className="space-y-3">
-                {course.careerPaths.map((career: string, index: number) => (
-                  <div key={index} className="flex items-center bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl p-5 border border-green-100 dark:border-green-800">
-                    <div className="bg-green-600 text-white rounded-lg p-2 mr-4">
-                      <Award className="h-5 w-5" />
+              {courseData.careerPaths && courseData.careerPaths.length > 0 && (
+                <div className="flex flex-col">
+                  <div className="mb-6 sm:mb-8">
+                    <div className="flex items-center mb-3 sm:mb-4">
+                      <div className="bg-purple-100 dark:bg-purple-900 p-2 sm:p-3 rounded-lg mr-2 sm:mr-3 flex-shrink-0">
+                        <Briefcase className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600 dark:text-purple-400" />
+                      </div>
+                      <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white break-words">
+                        Career Opportunities
+                      </h2>
                     </div>
-                    <span className="text-gray-700 dark:text-gray-300 font-semibold">{career}</span>
+                    <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-4 sm:mb-6">
+                      Potential career paths after completing this course
+                    </p>
                   </div>
-                ))}
-              </div>
+                  <div className="space-y-2 sm:space-y-3 flex-1">
+                    {courseData.careerPaths.map((career: string, index: number) => (
+                      <div key={index} className="flex items-center bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl p-4 sm:p-5 border border-green-100 dark:border-green-800">
+                        <div className="bg-green-600 text-white rounded-lg p-1.5 sm:p-2 mr-3 sm:mr-4 flex-shrink-0">
+                          <Award className="h-4 w-4 sm:h-5 sm:w-5" />
+                        </div>
+                        <span className="text-sm sm:text-base text-gray-700 dark:text-gray-300 font-semibold break-words flex-1">{career}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      ) : null}
 
       {/* Call to Action */}
-      <section className="py-20 bg-gradient-to-br from-green-900 to-emerald-900">
+      <section className="py-12 sm:py-16 lg:py-20 bg-gradient-to-br from-green-900 to-emerald-900">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+          <div className="text-center mb-8 sm:mb-12">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-4 break-words">
               Ready to Start Your Journey?
             </h2>
-            <p className="text-xl text-green-100">
+            <p className="text-lg sm:text-xl text-green-100 break-words">
               Join hundreds of students who have transformed their careers
             </p>
           </div>
           
-          <div className="bg-white dark:bg-gray-800 rounded-2xl p-10 shadow-2xl">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center mb-8">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 sm:p-8 lg:p-10 shadow-2xl">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-10 lg:gap-12 items-start mb-8 sm:mb-10">
               <div className="text-center md:text-left">
-                <p className="text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Investment</p>
-                <div className="flex items-center justify-center md:justify-start">
-                  <TbCurrencyNaira className="h-10 w-10 text-green-600 mr-2" />
-                  <p className="text-5xl font-bold text-gray-900 dark:text-white">{course.fee.replace('₦', '')}</p>
+                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Investment</p>
+                <div className="flex items-baseline justify-center md:justify-start gap-2 mb-2">
+                  <TbCurrencyNaira className="h-8 w-8 sm:h-10 sm:w-10 text-green-600 flex-shrink-0" />
+                  <p className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white break-words leading-none">
+                    {courseData.fee ? courseData.fee.replace(/₦/g, '').trim() : 'N/A'}
+                  </p>
                 </div>
-                <p className="text-gray-600 dark:text-gray-400 mt-2">One-time course fee</p>
+                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">One-time course fee</p>
               </div>
               
               <div className="text-center md:text-left">
-                <p className="text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Duration</p>
-                <div className="flex items-center justify-center md:justify-start">
-                  <Clock className="h-10 w-10 text-blue-600 mr-2" />
-                  <p className="text-3xl font-bold text-gray-900 dark:text-white">{course.duration}</p>
+                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Duration</p>
+                <div className="flex items-baseline justify-center md:justify-start gap-2 mb-2">
+                  <Clock className="h-8 w-8 sm:h-10 sm:w-10 text-blue-600 flex-shrink-0" />
+                  <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white break-words leading-none">{courseData.duration || 'N/A'}</p>
                 </div>
-                <p className="text-gray-600 dark:text-gray-400 mt-2">{course.studyMode}</p>
+                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 break-words">{courseData.studyMode || 'N/A'}</p>
               </div>
             </div>
             
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
               <button
-                onClick={() => router.push('/application')}
-                className="flex-1 px-8 py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-semibold text-lg hover:shadow-xl hover:scale-105 transition-all flex items-center justify-center"
+                onClick={() => {
+                  // Check if this is an IVET-HUB course (skill-based training)
+                  const isIvetHubCourse = courseData.programSlug?.toLowerCase().includes('ivet');
+                  router.push(isIvetHubCourse ? '/skill-application' : '/application');
+                }}
+                className="flex-1 px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-semibold text-base sm:text-lg hover:shadow-xl hover:scale-105 transition-all flex items-center justify-center"
               >
-                <GraduationCap className="h-6 w-6 mr-2" />
+                <GraduationCap className="h-5 w-5 sm:h-6 sm:w-6 mr-2" />
                 Apply Now
               </button>
               <button 
-                onClick={() => router.push(`/programs/${course.programSlug}`)}
-                className="flex-1 px-8 py-4 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 transition-all flex items-center justify-center"
+                onClick={() => router.push(`/programs/${courseData.programSlug}`)}
+                className="flex-1 px-6 sm:px-8 py-3 sm:py-4 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl font-semibold text-base sm:text-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-all flex items-center justify-center"
               >
-                <BookOpen className="h-6 w-6 mr-2" />
+                <BookOpen className="h-5 w-5 sm:h-6 sm:w-6 mr-2" />
                 View All Courses
               </button>
             </div>
 
-            <div className="mt-6 flex items-center justify-center text-gray-500 dark:text-gray-400 text-sm">
-              <Calendar className="h-4 w-4 mr-2" />
-              <span>Rolling Admissions - Apply Anytime</span>
+            <div className="mt-4 sm:mt-6 flex items-center justify-center text-gray-500 dark:text-gray-400 text-xs sm:text-sm">
+              <Calendar className="h-3 w-3 sm:h-4 sm:w-4 mr-2 flex-shrink-0" />
+              <span className="break-words">Rolling Admissions - Apply Anytime</span>
             </div>
           </div>
         </div>

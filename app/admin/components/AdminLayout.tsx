@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { 
   LayoutDashboard, Users, Shield, Settings, FileText, 
   Activity, Database, LogOut, Menu, X, ChevronDown,
-  Bell, Search, User, UserPlus, BookOpen, GraduationCap, Newspaper, UserCircle
+  Bell, Search, User, UserPlus, BookOpen, GraduationCap, Newspaper, UserCircle, ClipboardList
 } from 'lucide-react';
 
 interface AdminLayoutProps {
@@ -21,8 +21,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
     { name: 'User Management', href: '/admin/users', icon: Users },
     { name: 'Manage Applicants', href: '/admin/applicants', icon: UserPlus },
-    { name: 'Manage Programs', href: '/admin/programs', icon: BookOpen },
-    { name: 'Manage Courses', href: '/admin/courses', icon: GraduationCap },
+    { name: 'Skill Applicants', href: '/admin/skill-applicants', icon: ClipboardList },
+    { name: 'Manage Services', href: '/admin/services', icon: BookOpen },
+    { name: 'Manage Programs', href: '/admin/programs', icon: GraduationCap },
     { name: 'Manage News', href: '/admin/news', icon: Newspaper },
     { name: 'Manage Team', href: '/admin/team', icon: UserCircle },
     { name: 'Role Management', href: '/admin/roles', icon: Shield },

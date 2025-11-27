@@ -15,15 +15,9 @@ interface Program {
   description: string;
   icon: string | null;
   color: string | null;
-  duration: string | null;
-  studyMode: string | null;
+  heroImage: string | null;
   totalCourses: number;
-  fee: string | null;
-  applicationDeadline: string | null;
-  requirements: any;
-  careerProspects: any;
   thematicAreas: any;
-  services: any;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -48,21 +42,10 @@ export default function ProgramsManagement() {
     description: '',
     icon: '',
     color: 'from-green-500 to-emerald-500',
-    duration: '',
-    studyMode: '',
-    fee: '',
-    applicationDeadline: '',
-    requirements: [] as string[],
-    careerProspects: [] as string[],
-    thematicAreas: [] as string[],
-    services: [] as string[],
+    heroImage: '',
+    totalCourses: 0,
     isActive: true,
   });
-
-  const [tempRequirement, setTempRequirement] = useState('');
-  const [tempCareerProspect, setTempCareerProspect] = useState('');
-  const [tempThematicArea, setTempThematicArea] = useState('');
-  const [tempService, setTempService] = useState('');
 
   useEffect(() => {
     fetchPrograms();
@@ -123,10 +106,6 @@ export default function ProgramsManagement() {
         body: JSON.stringify({
           ...formData,
           slug,
-          requirements: formData.requirements.length > 0 ? formData.requirements : null,
-          careerProspects: formData.careerProspects.length > 0 ? formData.careerProspects : null,
-          thematicAreas: formData.thematicAreas.length > 0 ? formData.thematicAreas : null,
-          services: formData.services.length > 0 ? formData.services : null,
         }),
       });
 
@@ -160,10 +139,6 @@ export default function ProgramsManagement() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
-          requirements: formData.requirements.length > 0 ? formData.requirements : null,
-          careerProspects: formData.careerProspects.length > 0 ? formData.careerProspects : null,
-          thematicAreas: formData.thematicAreas.length > 0 ? formData.thematicAreas : null,
-          services: formData.services.length > 0 ? formData.services : null,
         }),
       });
 
@@ -221,14 +196,8 @@ export default function ProgramsManagement() {
       description: program.description,
       icon: program.icon || '',
       color: program.color || 'from-green-500 to-emerald-500',
-      duration: program.duration || '',
-      studyMode: program.studyMode || '',
-      fee: program.fee || '',
-      applicationDeadline: program.applicationDeadline || '',
-      requirements: Array.isArray(program.requirements) ? program.requirements : [],
-      careerProspects: Array.isArray(program.careerProspects) ? program.careerProspects : [],
-      thematicAreas: Array.isArray(program.thematicAreas) ? program.thematicAreas : [],
-      services: Array.isArray(program.services) ? program.services : [],
+      heroImage: program.heroImage || '',
+      totalCourses: program.totalCourses || 0,
       isActive: program.isActive,
     });
     setShowEditModal(true);
@@ -247,21 +216,11 @@ export default function ProgramsManagement() {
       description: '',
       icon: '',
       color: 'from-green-500 to-emerald-500',
-      duration: '',
-      studyMode: '',
-      fee: '',
-      applicationDeadline: '',
-      requirements: [],
-      careerProspects: [],
-      thematicAreas: [],
-      services: [],
+      heroImage: '',
+      totalCourses: 0,
       isActive: true,
     });
     setSelectedProgram(null);
-    setTempRequirement('');
-    setTempCareerProspect('');
-    setTempThematicArea('');
-    setTempService('');
   };
 
   const showMessage = (type: 'success' | 'error', text: string) => {
@@ -269,24 +228,6 @@ export default function ProgramsManagement() {
     setTimeout(() => setMessage(null), 5000);
   };
 
-  const addArrayItem = (field: 'requirements' | 'careerProspects' | 'thematicAreas' | 'services', value: string) => {
-    if (!value.trim()) return;
-    setFormData({
-      ...formData,
-      [field]: [...formData[field], value.trim()],
-    });
-    if (field === 'requirements') setTempRequirement('');
-    if (field === 'careerProspects') setTempCareerProspect('');
-    if (field === 'thematicAreas') setTempThematicArea('');
-    if (field === 'services') setTempService('');
-  };
-
-  const removeArrayItem = (field: 'requirements' | 'careerProspects' | 'thematicAreas' | 'services', index: number) => {
-    setFormData({
-      ...formData,
-      [field]: formData[field].filter((_, i) => i !== index),
-    });
-  };
 
   return (
     <CenterLeaderLayout>
@@ -484,6 +425,19 @@ export default function ProgramsManagement() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Icon (Icon name/identifier)
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.icon}
+                      onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
+                      placeholder="e.g., GraduationCap, Microscope, Briefcase"
+                      className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-900 dark:text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Color (Tailwind gradient classes)
                     </label>
                     <input
@@ -497,51 +451,26 @@ export default function ProgramsManagement() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Duration
+                      Hero Image (Image path/URL)
                     </label>
                     <input
                       type="text"
-                      value={formData.duration}
-                      onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-                      placeholder="e.g., 2-5 Years"
+                      value={formData.heroImage}
+                      onChange={(e) => setFormData({ ...formData, heroImage: e.target.value })}
+                      placeholder="/images/lab.jpg"
                       className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-900 dark:text-white"
                     />
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Study Mode
+                      Total Courses
                     </label>
                     <input
-                      type="text"
-                      value={formData.studyMode}
-                      onChange={(e) => setFormData({ ...formData, studyMode: e.target.value })}
-                      placeholder="e.g., Full-time / Part-time / Online"
-                      className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-900 dark:text-white"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Fee
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.fee}
-                      onChange={(e) => setFormData({ ...formData, fee: e.target.value })}
-                      placeholder="e.g., ₦350,000 - ₦500,000 per session"
-                      className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-900 dark:text-white"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Application Deadline
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.applicationDeadline}
-                      onChange={(e) => setFormData({ ...formData, applicationDeadline: e.target.value })}
+                      type="number"
+                      min="0"
+                      value={formData.totalCourses}
+                      onChange={(e) => setFormData({ ...formData, totalCourses: parseInt(e.target.value) || 0 })}
                       className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-900 dark:text-white"
                     />
                   </div>
@@ -558,92 +487,6 @@ export default function ProgramsManagement() {
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-900 dark:text-white"
                   />
-                </div>
-
-                {/* Requirements */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Requirements
-                  </label>
-                  <div className="flex gap-2 mb-2">
-                    <input
-                      type="text"
-                      value={tempRequirement}
-                      onChange={(e) => setTempRequirement(e.target.value)}
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          addArrayItem('requirements', tempRequirement);
-                        }
-                      }}
-                      placeholder="Add requirement..."
-                      className="flex-1 px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-900 dark:text-white"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => addArrayItem('requirements', tempRequirement)}
-                      className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-                    >
-                      Add
-                    </button>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {formData.requirements.map((req, index) => (
-                      <span key={index} className="inline-flex items-center px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full text-sm">
-                        {req}
-                        <button
-                          type="button"
-                          onClick={() => removeArrayItem('requirements', index)}
-                          className="ml-2 text-gray-500 hover:text-red-600"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Career Prospects */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Career Prospects
-                  </label>
-                  <div className="flex gap-2 mb-2">
-                    <input
-                      type="text"
-                      value={tempCareerProspect}
-                      onChange={(e) => setTempCareerProspect(e.target.value)}
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          addArrayItem('careerProspects', tempCareerProspect);
-                        }
-                      }}
-                      placeholder="Add career prospect..."
-                      className="flex-1 px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-900 dark:text-white"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => addArrayItem('careerProspects', tempCareerProspect)}
-                      className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-                    >
-                      Add
-                    </button>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {formData.careerProspects.map((cp, index) => (
-                      <span key={index} className="inline-flex items-center px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full text-sm">
-                        {cp}
-                        <button
-                          type="button"
-                          onClick={() => removeArrayItem('careerProspects', index)}
-                          className="ml-2 text-gray-500 hover:text-red-600"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
                 </div>
 
                 <div className="flex items-center">

@@ -52,10 +52,15 @@ export default function OurTeamPage() {
     try {
       setLoading(true);
       const response = await fetch('/api/team');
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
-      if (data.success) {
+      if (data.success && data.team) {
         // Convert JSON fields to arrays
-        const members = data.team.map((member: any) => ({
+        const members = Array.isArray(data.team) ? data.team.map((member: any) => ({
           ...member,
           qualifications: Array.isArray(member.qualifications) 
             ? member.qualifications 
@@ -69,13 +74,15 @@ export default function OurTeamPage() {
                   ? JSON.parse(member.researchAreas) 
                   : null)
             : null,
-        }));
+        })) : [];
         setTeamMembers(members);
       } else {
-        console.error('Failed to fetch team members:', data.message);
+        console.error('Failed to fetch team members:', data.message || data.error || 'Unknown error');
+        setTeamMembers([]); // Set empty array on error
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching team members:', error);
+      console.error('Error details:', error.message || error);
     } finally {
       setLoading(false);
     }
@@ -94,6 +101,46 @@ export default function OurTeamPage() {
   const getCategoryIcon = (categoryId: string) => {
     const category = teamCategories.find(cat => cat.id === categoryId);
     return category?.icon || Users;
+  };
+
+  // Helper function to get image
+  const getImage = (imagePath: string | null | undefined): string => {
+    if (!imagePath) return '';
+    
+    // If it's a base64 encoded image (starts with data:image/), return it directly
+    if (typeof imagePath === 'string' && imagePath.startsWith('data:image/')) {
+      return imagePath;
+    }
+    
+    // If it's a string path starting with /, it's a public path - use it directly
+    if (typeof imagePath === 'string' && imagePath.startsWith('/')) {
+      return imagePath;
+    }
+    
+    // If it's a full URL (http:// or https://), use it directly
+    if (typeof imagePath === 'string' && (imagePath.startsWith('http://') || imagePath.startsWith('https://'))) {
+      return imagePath;
+    }
+    
+    // If it's a relative path without leading slash, prepend /
+    if (typeof imagePath === 'string' && !imagePath.startsWith('http') && !imagePath.startsWith('data:')) {
+      return '/' + imagePath;
+    }
+    
+    // Return as-is for other cases
+    return imagePath || '';
+  };
+
+  // Helper function to check if image needs unoptimized prop
+  const isUnoptimizedImage = (imageSrc: string | null | undefined): boolean => {
+    if (!imageSrc) return false;
+    if (typeof imageSrc === 'string') {
+      // Base64 images or external URLs need unoptimized
+      return imageSrc.startsWith('data:') || 
+             imageSrc.startsWith('http://') || 
+             imageSrc.startsWith('https://');
+    }
+    return false;
   };
 
   return (
@@ -159,7 +206,14 @@ export default function OurTeamPage() {
         {/* Team Members Grid */}
         <section className="py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            {filteredMembers.length === 0 ? (
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-16">
+                <Loader2 className="h-12 w-12 text-green-600 animate-spin mb-4" />
+                <p className="text-lg text-gray-600 dark:text-gray-400">
+                  Loading team members...
+                </p>
+              </div>
+            ) : filteredMembers.length === 0 ? (
               <div className="text-center py-16">
                 <Users className="h-16 w-16 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-gray-600 dark:text-gray-400 mb-2">
@@ -184,14 +238,18 @@ export default function OurTeamPage() {
                         <div className="absolute inset-0 flex items-center justify-center">
                           <User className="h-32 w-32 text-white/20" />
                         </div>
-                        {member.image && (
+                        {member.image && getImage(member.image) ? (
                           <Image
-                            src={member.image.startsWith('data:') ? member.image : member.image}
+                            src={getImage(member.image)}
                             alt={member.name}
                             fill
-                            className="object-cover w-full h-full"
-                            unoptimized={member.image.startsWith('data:')}
+                            className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300"
+                            unoptimized={isUnoptimizedImage(member.image)}
                           />
+                        ) : (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <User className="h-24 w-24 text-white/40" />
+                          </div>
                         )}
                         <div className="absolute bottom-4 left-4">
                           <span className="inline-flex items-center px-3 py-1 bg-white/90 dark:bg-gray-800/90 rounded-full text-xs font-medium text-gray-700 dark:text-gray-300">
@@ -202,109 +260,13 @@ export default function OurTeamPage() {
                       </div>
 
                       {/* Member Info */}
-                      <div className="p-6">
+                      <div className="p-2 text-center">
                         <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
                           {member.name}
                         </h3>
                         <p className="text-green-600 dark:text-green-400 font-semibold mb-2">
                           {member.title}
-                        </p>
-                        {member.department && (
-                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 flex items-center">
-                            <Building className="h-4 w-4 mr-1" />
-                            {member.department}
-                          </p>
-                        )}
-
-                        <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 line-clamp-3">
-                          {member.bio}
-                        </p>
-
-                        {/* Qualifications */}
-                        {member.qualifications && member.qualifications.length > 0 && (
-                          <div className="mb-4">
-                            <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wide">
-                              Qualifications
-                            </h4>
-                            <ul className="space-y-1">
-                              {member.qualifications.slice(0, 2).map((qual, index) => (
-                                <li key={index} className="text-xs text-gray-600 dark:text-gray-400 flex items-start">
-                                  <Award className="h-3 w-3 mr-1 mt-0.5 text-green-600 shrink-0" />
-                                  {qual}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-
-                        {/* Research Areas */}
-                        {member.researchAreas && member.researchAreas.length > 0 && (
-                          <div className="mb-4">
-                            <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wide">
-                              Research Areas
-                            </h4>
-                            <div className="flex flex-wrap gap-1">
-                              {member.researchAreas.slice(0, 3).map((area, index) => (
-                                <span
-                                  key={index}
-                                  className="inline-block px-2 py-1 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded text-xs"
-                                >
-                                  {area}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Contact & Social */}
-                        <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-3">
-                              <a
-                                href={`mailto:${member.email}`}
-                                onClick={(e) => e.stopPropagation()}
-                                className="p-2 text-gray-600 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
-                                title="Email"
-                              >
-                                <Mail className="h-4 w-4" />
-                              </a>
-                              {member.phone && (
-                                <a
-                                  href={`tel:${member.phone}`}
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="p-2 text-gray-600 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
-                                  title="Phone"
-                                >
-                                  <Phone className="h-4 w-4" />
-                                </a>
-                              )}
-                              {member.linkedin && (
-                                <a
-                                  href={member.linkedin}
-                                  onClick={(e) => e.stopPropagation()}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="p-2 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-                                  title="LinkedIn"
-                                >
-                                  <Linkedin className="h-4 w-4" />
-                                </a>
-                              )}
-                              {member.twitter && (
-                                <a
-                                  href={member.twitter}
-                                  onClick={(e) => e.stopPropagation()}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="p-2 text-gray-600 dark:text-gray-400 hover:text-blue-400 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-                                  title="Twitter"
-                                >
-                                  <Twitter className="h-4 w-4" />
-                                </a>
-                              )}
-                            </div>
-                          </div>
-                        </div>
+                        </p> 
                       </div>
                     </div>
                   );

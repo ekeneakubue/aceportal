@@ -29,16 +29,23 @@ model Application {
   firstname               String
   surname                 String
   middlename              String?
+  maidenName              String?
+  nationalId              String
+  nationalIdFile          String?
+  maritalStatus           String
   dateOfBirth             String
   gender                  String
   nationality             String
   phoneNumber             String
   alternatePhone          String?
   address                 String
+  homeAddress             String
+  homeTown                String
   city                    String
   state                   String
   country                 String
   postalCode              String?
+  religion                String
   avatar                  String?
   
   // Next of Kin
@@ -127,55 +134,65 @@ enum UserRole {
   Industrial_Liaison_Officer
 }
 
-model Program {
+model Service {
   id                  String   @id @default(cuid())
   title               String
   slug                String   @unique
   subtitle            String?
   description         String   @db.Text
-  icon                String?  // Icon name/identifier
+  icon                String?  // Icon name/identifier (e.g., "GraduationCap", "Microscope", "Briefcase")
   color               String?  // Gradient color classes (e.g., "from-green-500 to-emerald-500")
-  duration            String?  // e.g., "2-5 Years", "3-6 Months"
-  studyMode           String?  // e.g., "Full-time / Part-time / Online"
-  totalCourses        Int      @default(0)
-  fee                 String?  // e.g., "₦350,000 - ₦500,000 per session"
-  applicationDeadline String?
-  requirements        Json?    // Array of requirement strings
-  careerProspects     Json?    // Array of career prospect strings
-  thematicAreas       Json?    // Array of thematic areas (for graduate programs)
-  services            Json?    // Array of services (for service-based programs)
+  totalCourses        Int      @default(0) // Displayed prominently in hero section
+  displayOrder        Int      @default(0) // For custom ordering of services
+  // Content arrays
   isActive            Boolean  @default(true)
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
+  programs            Program[]
 
-  courses             Course[]
-
-  @@map("programs")
+  @@index([slug])
+  @@index([isActive])
+  @@map("services")
 }
 
-model Course {
+model Program {
   id          String   @id @default(cuid())
+  
+  // Basic Information
   title       String
   slug        String   @unique
-  programId   String
   level       CourseLevel
+  
+  // Program Details
   duration    String?  // e.g., "6 Months", "18-24 Months"
   studyMode   String?  // e.g., "Full-time / Part-time / Online"
   fee         String?  // e.g., "₦150,000"
+  brochure    String?  // Brochure file path/URL (base64 or file path)
   overview    String   @db.Text
+  
+  // Program Content (JSON arrays)
   objectives  Json?    // Array of learning objective strings
   curriculum  Json?    // Array of curriculum module strings
   requirements Json?   // Array of requirement strings
   careerPaths Json?    // Array of career path strings
+  
+  // Status
   isActive    Boolean  @default(true)
+  displayOrder Int     @default(0) // For custom ordering
+  
+  // Timestamps
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  program     Program  @relation(fields: [programId], references: [id], onDelete: Cascade)
+  // Relations
+  serviceId   String?
+  service     Service? @relation(fields: [serviceId], references: [id])
 
-  @@index([programId])
   @@index([slug])
-  @@map("courses")
+  @@index([isActive])
+  @@index([displayOrder])
+  @@index([serviceId])
+  @@map("programs")
 }
 
 enum CourseLevel {
@@ -252,4 +269,56 @@ enum TeamRole {
   FACULTY
   STAFF
   RESEARCH
+}
+
+model SkillApplication {
+  id                      String   @id @default(cuid())
+  
+  // Personal Information
+  surname                 String
+  firstname               String
+  email                   String
+  phone                   String
+  dateOfBirth             String
+  gender                  String
+  address                 String
+  avatar                  String?  // Optional passport photograph URL/base64
+  
+  // Technical Interest
+  technicalInterest       String   // Web Development, Software Development, UI/UX Design
+  
+  // Technical Experience
+  hasPriorExperience      String   // Yes or No
+  priorTechSkills         Json?    // Array of tech skills if hasPriorExperience is Yes (HTML, CSS, JavaScript, PHP, Python, Ruby, C#, C++, SQL, Postgres, Figma, Photoshop, Corel Draw, .NET, UI/UX)
+  
+  // Device and Internet Access
+  hasLaptop               String   // Yes or No
+  hasReliableInternet     String   // Yes or No
+  
+  // Motivation and Commitment
+  whyLearnTechSkill       String   @db.Text
+  careerGoalsInTech       String   @db.Text
+  committedToProgram      String   // Yes or No
+  
+  // Additional Information
+  howDidYouHear           String   @db.Text
+  disabilitiesOrAssistance String?  @db.Text
+  
+  // Declaration
+  informationConfirmed    Boolean  @default(false)
+  
+  // Payment Information
+  paymentReference        String?
+  
+  // Application Status
+  status                  ApplicationStatus @default(PENDING)
+  applicationNumber       String?          @unique
+  
+  createdAt               DateTime          @default(now())
+  updatedAt               DateTime          @updatedAt
+
+  @@index([email])
+  @@index([status])
+  @@index([createdAt])
+  @@map("skill_applications")
 }

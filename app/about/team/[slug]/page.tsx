@@ -129,6 +129,46 @@ export default function TeamDetailPage() {
     }
   };
 
+  // Helper function to get image
+  const getImage = (imagePath: string | null | undefined): string => {
+    if (!imagePath) return '';
+    
+    // If it's a base64 encoded image (starts with data:image/), return it directly
+    if (typeof imagePath === 'string' && imagePath.startsWith('data:image/')) {
+      return imagePath;
+    }
+    
+    // If it's a string path starting with /, it's a public path - use it directly
+    if (typeof imagePath === 'string' && imagePath.startsWith('/')) {
+      return imagePath;
+    }
+    
+    // If it's a full URL (http:// or https://), use it directly
+    if (typeof imagePath === 'string' && (imagePath.startsWith('http://') || imagePath.startsWith('https://'))) {
+      return imagePath;
+    }
+    
+    // If it's a relative path without leading slash, prepend /
+    if (typeof imagePath === 'string' && !imagePath.startsWith('http') && !imagePath.startsWith('data:')) {
+      return '/' + imagePath;
+    }
+    
+    // Return as-is for other cases
+    return imagePath || '';
+  };
+
+  // Helper function to check if image needs unoptimized prop
+  const isUnoptimizedImage = (imageSrc: string | null | undefined): boolean => {
+    if (!imageSrc) return false;
+    if (typeof imageSrc === 'string') {
+      // Base64 images or external URLs need unoptimized
+      return imageSrc.startsWith('data:') || 
+             imageSrc.startsWith('http://') || 
+             imageSrc.startsWith('https://');
+    }
+    return false;
+  };
+
   return (
     <>
       <Navbar />
@@ -154,13 +194,13 @@ export default function TeamDetailPage() {
               {/* Profile Image */}
               <div className="md:col-span-1">
                 <div className="relative w-64 h-64 mx-auto md:mx-0 rounded-2xl overflow-hidden shadow-2xl border-4 border-white/20">
-                  {member.image ? (
+                  {member.image && getImage(member.image) ? (
                     <Image
-                      src={member.image.startsWith('data:') ? member.image : member.image}
+                      src={getImage(member.image)}
                       alt={member.name}
                       fill
                       className="object-cover w-full h-full"
-                      unoptimized={member.image.startsWith('data:')}
+                      unoptimized={isUnoptimizedImage(member.image)}
                     />
                   ) : (
                     <div className="w-full h-full bg-white/10 flex items-center justify-center">

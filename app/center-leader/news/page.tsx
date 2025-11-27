@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import CenterLeaderLayout from '../components/CenterLeaderLayout';
+import Image from 'next/image';
 import { 
   Newspaper, Plus, Search, Edit, Trash2, Eye, 
-  X, Check, AlertCircle, Filter, Calendar, User, Tag
+  X, Check, AlertCircle, Filter, Calendar, User, Tag, Upload, Camera
 } from 'lucide-react';
 
 interface News {
@@ -55,6 +56,8 @@ export default function NewsManagement() {
   });
 
   const [tempTag, setTempTag] = useState('');
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [images, setImages] = useState<string[]>([]);
 
   useEffect(() => {
     fetchNews();
@@ -117,6 +120,49 @@ export default function NewsManagement() {
       .replace(/(^-|-$)/g, '');
   };
 
+  const handleImageUpload = (file: File) => {
+    if (file.size > 5 * 1024 * 1024) {
+      showMessage('error', 'File size must be less than 5MB');
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      showMessage('error', 'Please upload an image file');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result as string;
+      setFormData({ ...formData, image: base64String });
+      setImagePreview(base64String);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleAddImage = (file: File) => {
+    if (file.size > 5 * 1024 * 1024) {
+      showMessage('error', 'File size must be less than 5MB');
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      showMessage('error', 'Please upload an image file');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result as string;
+      setImages([...images, base64String]);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveImage = (index: number) => {
+    setImages(images.filter((_, i) => i !== index));
+  };
+
   const handleCreateNews = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -130,6 +176,7 @@ export default function NewsManagement() {
           ...formData,
           slug,
           tags: formData.tags.length > 0 ? formData.tags : null,
+          images: images.length > 0 ? images : null,
           publishedAt: formData.publishedAt || null,
         }),
       });
@@ -229,6 +276,10 @@ export default function NewsManagement() {
       isPublished: item.isPublished,
       isFeatured: item.isFeatured,
     });
+    setImagePreview(item.image || null);
+    // Load additional images if they exist (assuming they're stored in a JSON field)
+    // For now, we'll initialize with empty array and let user add more
+    setImages([]);
     setShowEditModal(true);
   };
 
@@ -253,6 +304,8 @@ export default function NewsManagement() {
     });
     setSelectedNews(null);
     setTempTag('');
+    setImagePreview(null);
+    setImages([]);
   };
 
   const showMessage = (type: 'success' | 'error', text: string) => {
@@ -453,6 +506,110 @@ export default function NewsManagement() {
               </div>
 
               <form onSubmit={showCreateModal ? handleCreateNews : handleUpdateNews} className="p-6 space-y-6">
+                {/* Image Upload - First Field */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Image *
+                  </label>
+                  <div className="flex items-center space-x-6">
+                    {imagePreview ? (
+                      <div className="relative w-32 h-32 rounded-lg overflow-hidden border-2 border-gray-300 dark:border-gray-600">
+                        <Image
+                          src={imagePreview}
+                          alt="Preview"
+                          fill
+                          className="object-cover"
+                          unoptimized={imagePreview.startsWith('data:')}
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-32 h-32 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center bg-gray-50 dark:bg-gray-800">
+                        <Camera className="h-8 w-8 text-gray-400" />
+                      </div>
+                    )}
+                    <div>
+                      <input
+                        type="file"
+                        id={showCreateModal ? "image-upload-create" : "image-upload-edit"}
+                        accept="image/*"
+                        onChange={(e) => e.target.files && handleImageUpload(e.target.files[0])}
+                        className="hidden"
+                      />
+                      <label
+                        htmlFor={showCreateModal ? "image-upload-create" : "image-upload-edit"}
+                        className="cursor-pointer inline-flex items-center px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                      >
+                        <Upload className="h-5 w-5 mr-2" />
+                        Upload Image
+                      </label>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                        Max size: 5MB. Formats: JPG, PNG, GIF
+                      </p>
+                      {!formData.image && (
+                        <p className="text-xs text-red-500 dark:text-red-400 mt-1">
+                          Image is required
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Additional Images */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Additional Images
+                  </label>
+                  <div className="space-y-4">
+                    {/* Display uploaded images */}
+                    {images.length > 0 && (
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {images.map((img, index) => (
+                          <div key={index} className="relative group">
+                            <div className="relative w-full h-32 rounded-lg overflow-hidden border-2 border-gray-300 dark:border-gray-600">
+                              <Image
+                                src={img}
+                                alt={`Additional image ${index + 1}`}
+                                fill
+                                className="object-cover"
+                                unoptimized={img.startsWith('data:')}
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveImage(index)}
+                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* Add more images button */}
+                    <div>
+                      <input
+                        type="file"
+                        id={showCreateModal ? "add-images-create" : "add-images-edit"}
+                        accept="image/*"
+                        onChange={(e) => e.target.files && handleAddImage(e.target.files[0])}
+                        className="hidden"
+                        multiple
+                      />
+                      <label
+                        htmlFor={showCreateModal ? "add-images-create" : "add-images-edit"}
+                        className="cursor-pointer inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                      >
+                        <Plus className="h-5 w-5 mr-2" />
+                        Add More Images
+                      </label>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                        You can add multiple images. Max size: 5MB each.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -514,20 +671,6 @@ export default function NewsManagement() {
                       required
                       value={formData.author}
                       onChange={(e) => setFormData({ ...formData, author: e.target.value })}
-                      className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 dark:text-white"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Image URL *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={formData.image}
-                      onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                      placeholder="https://example.com/image.jpg"
                       className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 dark:text-white"
                     />
                   </div>

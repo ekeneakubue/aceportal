@@ -52,19 +52,33 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const callbackUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/application?payment_callback=true`;
+    // Check if using test mode
+    const isTestMode = paystackSecretKey.startsWith('sk_test_');
+    if (isTestMode) {
+      console.log('Using Paystack TEST mode - will redirect to test payment page');
+    } else {
+      console.log('Using Paystack LIVE mode - will redirect to live payment page');
+    }
+
+    // Set callback URL - check if it's for skill application or regular application
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const { callback_path } = body;
+    const callbackUrl = callback_path 
+      ? `${baseUrl}${callback_path}?payment_callback=true`
+      : `${baseUrl}/application?payment_callback=true`;
     
     const requestBody = {
       email,
       amount: amountInKobo,
       currency: 'NGN',
       callback_url: callbackUrl,
+      redirect_url: callbackUrl, // Paystack redirect URL for web payments
       metadata: {
         custom_fields: [
           {
-            display_name: 'Application Fee',
-            variable_name: 'application_fee',
-            value: 'Application Processing Fee'
+            display_name: callback_path === '/skill-application' ? 'Skill Application Fee' : 'Application Fee',
+            variable_name: callback_path === '/skill-application' ? 'skill_application_fee' : 'application_fee',
+            value: callback_path === '/skill-application' ? 'Skill Application Processing Fee' : 'Application Processing Fee'
           }
         ]
       }
@@ -73,7 +87,9 @@ export async function POST(request: NextRequest) {
     console.log('Initializing Paystack transaction:', {
       email,
       amount: amountInKobo,
+      amountInNaira: (amountInKobo / 100).toFixed(2),
       callbackUrl,
+      mode: isTestMode ? 'TEST' : 'LIVE',
       keyPrefix: paystackSecretKey.substring(0, 8) + '...'
     });
 

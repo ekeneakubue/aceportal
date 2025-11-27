@@ -24,9 +24,10 @@ export async function GET(request: NextRequest) {
           },
         },
       },
-      orderBy: {
-        createdAt: 'desc',
-      },
+      orderBy: [
+        { displayOrder: 'asc' },
+        { createdAt: 'desc' },
+      ],
     });
 
     return NextResponse.json({
@@ -56,12 +57,14 @@ export async function POST(request: NextRequest) {
       duration,
       studyMode,
       fee,
+      brochure,
       overview,
       objectives,
       curriculum,
       requirements,
       careerPaths,
       isActive,
+      displayOrder,
     } = body;
 
     // Validate required fields
@@ -106,12 +109,14 @@ export async function POST(request: NextRequest) {
         duration: duration || null,
         studyMode: studyMode || null,
         fee: fee || null,
+        brochure: brochure || null,
         overview,
         objectives: objectives || null,
         curriculum: curriculum || null,
         requirements: requirements || null,
         careerPaths: careerPaths || null,
         isActive: isActive !== undefined ? isActive : true,
+        displayOrder: displayOrder !== undefined ? displayOrder : 0,
       },
       include: {
         program: {

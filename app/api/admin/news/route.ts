@@ -58,12 +58,39 @@ export async function POST(request: NextRequest) {
       publishedAt,
       isPublished,
       isFeatured,
+      // images field is not in schema, so we ignore it
     } = body;
 
-    // Validate required fields
-    if (!title || !slug || !category || !excerpt || !content || !author || !image) {
+    // Validate required fields with detailed error messages
+    const missingFields: string[] = [];
+    if (!title || title.trim() === '') missingFields.push('title');
+    if (!slug || slug.trim() === '') missingFields.push('slug');
+    if (!category || category.trim() === '') missingFields.push('category');
+    if (!excerpt || excerpt.trim() === '') missingFields.push('excerpt');
+    if (!content || content.trim() === '') missingFields.push('content');
+    if (!author || author.trim() === '') missingFields.push('author');
+    if (!image || image.trim() === '') missingFields.push('image');
+
+    if (missingFields.length > 0) {
       return NextResponse.json(
-        { success: false, message: 'Title, slug, category, excerpt, content, author, and image are required' },
+        { 
+          success: false, 
+          message: `Missing required fields: ${missingFields.join(', ')}`,
+          missingFields 
+        },
+        { status: 400 }
+      );
+    }
+
+    // Validate category enum
+    const validCategories = ['RESEARCH', 'ACHIEVEMENT', 'EVENT', 'ANNOUNCEMENT', 'COLLABORATION'];
+    if (!validCategories.includes(category)) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          message: `Invalid category. Must be one of: ${validCategories.join(', ')}`,
+          receivedCategory: category
+        },
         { status: 400 }
       );
     }
@@ -83,14 +110,14 @@ export async function POST(request: NextRequest) {
     // Create news
     const news = await prisma.news.create({
       data: {
-        title,
-        slug,
+        title: title.trim(),
+        slug: slug.trim(),
         category,
-        excerpt,
-        content,
-        author,
-        image,
-        tags: tags || null,
+        excerpt: excerpt.trim(),
+        content: content.trim(),
+        author: author.trim(),
+        image: image.trim(),
+        tags: tags && Array.isArray(tags) && tags.length > 0 ? tags : null,
         publishedAt: publishedAt ? new Date(publishedAt) : null,
         isPublished: isPublished !== undefined ? isPublished : false,
         isFeatured: isFeatured !== undefined ? isFeatured : false,
@@ -104,6 +131,19 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error creating news:', error);
+    
+    // Handle Prisma validation errors
+    if (error.code === 'P2002') {
+      return NextResponse.json(
+        { 
+          success: false, 
+          message: 'A news item with this slug already exists',
+          error: error.message
+        },
+        { status: 400 }
+      );
+    }
+
     return NextResponse.json(
       { 
         success: false, 

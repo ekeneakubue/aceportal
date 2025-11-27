@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 // GET single program by ID
 export async function GET(
@@ -14,9 +12,6 @@ export async function GET(
     const { id } = await params;
     const program = await prisma.program.findUnique({
       where: { id },
-      include: {
-        courses: true,
-      },
     });
 
     if (!program) {
@@ -52,18 +47,18 @@ export async function PUT(
     const {
       title,
       slug,
-      subtitle,
-      description,
-      icon,
-      color,
+      level,
       duration,
       studyMode,
       fee,
-      applicationDeadline,
+      brochure,
+      overview,
+      objectives,
+      curriculum,
       requirements,
-      careerProspects,
-      thematicAreas,
-      services,
+      careerPaths,
+      serviceId,
+      displayOrder,
       isActive,
     } = body;
 
@@ -93,34 +88,25 @@ export async function PUT(
       }
     }
 
-    // Count courses for totalCourses
-    const courseCount = await prisma.course.count({
-      where: { programId: id },
-    });
-
     // Update program
     const program = await prisma.program.update({
       where: { id },
       data: {
         ...(title && { title }),
         ...(slug && { slug }),
-        ...(subtitle !== undefined && { subtitle: subtitle || null }),
-        ...(description && { description }),
-        ...(icon !== undefined && { icon: icon || null }),
-        ...(color !== undefined && { color: color || null }),
+        ...(level && { level }),
         ...(duration !== undefined && { duration: duration || null }),
         ...(studyMode !== undefined && { studyMode: studyMode || null }),
         ...(fee !== undefined && { fee: fee || null }),
-        ...(applicationDeadline !== undefined && { applicationDeadline: applicationDeadline || null }),
-        ...(requirements !== undefined && { requirements }),
-        ...(careerProspects !== undefined && { careerProspects }),
-        ...(thematicAreas !== undefined && { thematicAreas }),
-        ...(services !== undefined && { services }),
+        ...(brochure !== undefined && { brochure: brochure || null }),
+        ...(overview && { overview }),
+        ...(objectives !== undefined && { objectives: objectives || [] }),
+        ...(curriculum !== undefined && { curriculum: curriculum || [] }),
+        ...(requirements !== undefined && { requirements: requirements || [] }),
+        ...(careerPaths !== undefined && { careerPaths: careerPaths || [] }),
+        ...(serviceId !== undefined && { serviceId: serviceId || null }),
+        ...(displayOrder !== undefined && { displayOrder }),
         ...(isActive !== undefined && { isActive }),
-        totalCourses: courseCount,
-      },
-      include: {
-        courses: true,
       },
     });
 
@@ -153,9 +139,6 @@ export async function DELETE(
     const { id } = await params;
     const program = await prisma.program.findUnique({
       where: { id },
-      include: {
-        courses: true,
-      },
     });
 
     if (!program) {
@@ -165,7 +148,7 @@ export async function DELETE(
       );
     }
 
-    // Delete program (courses will be cascade deleted)
+    // Delete program
     await prisma.program.delete({
       where: { id },
     });

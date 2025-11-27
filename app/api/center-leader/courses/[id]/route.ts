@@ -63,12 +63,14 @@ export async function PUT(
       duration,
       studyMode,
       fee,
+      brochure,
       overview,
       objectives,
       curriculum,
       requirements,
       careerPaths,
       isActive,
+      displayOrder,
     } = body;
 
     // Check if course exists
@@ -122,12 +124,14 @@ export async function PUT(
         ...(duration !== undefined && { duration: duration || null }),
         ...(studyMode !== undefined && { studyMode: studyMode || null }),
         ...(fee !== undefined && { fee: fee || null }),
+        ...(brochure !== undefined && { brochure: brochure || null }),
         ...(overview && { overview }),
         ...(objectives !== undefined && { objectives }),
         ...(curriculum !== undefined && { curriculum }),
         ...(requirements !== undefined && { requirements }),
         ...(careerPaths !== undefined && { careerPaths }),
         ...(isActive !== undefined && { isActive }),
+        ...(displayOrder !== undefined && { displayOrder: typeof displayOrder === 'number' ? displayOrder : parseInt(displayOrder) || 0 }),
       },
       include: {
         program: {

@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { 
   LayoutDashboard, Users, Settings, FileText, 
   Activity, LogOut, Menu, X, ChevronDown,
-  Bell, Search, User, Shield, UserPlus, BookOpen, GraduationCap, Newspaper, UserCircle
+  Bell, Search, User, Shield, UserPlus, BookOpen, GraduationCap, Newspaper, UserCircle, ClipboardList
 } from 'lucide-react';
 
 interface CenterLeaderLayoutProps {
@@ -22,7 +22,8 @@ export default function CenterLeaderLayout({ children }: CenterLeaderLayoutProps
     { name: 'User Management', href: '/center-leader/users', icon: Users },
     { name: 'Role Management', href: '/center-leader/roles', icon: Shield },
     { name: 'Manage Applicants', href: '/center-leader/applicants', icon: UserPlus },
-    { name: 'Manage Programs', href: '/center-leader/programs', icon: BookOpen },
+    { name: 'Skill Applicants', href: '/center-leader/skill-applicants', icon: ClipboardList },
+    { name: 'Manage Services', href: '/center-leader/services', icon: BookOpen },
     { name: 'Manage Courses', href: '/center-leader/courses', icon: GraduationCap },
     { name: 'Manage News', href: '/center-leader/news', icon: Newspaper },
     { name: 'Manage Team', href: '/center-leader/team', icon: UserCircle },

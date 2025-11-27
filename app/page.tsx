@@ -21,6 +21,8 @@ import {
 export default function Home() {
   const router = useRouter();
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [newsData, setNewsData] = useState<any[]>([]);
+  const [loadingNews, setLoadingNews] = useState(false);
 
   const heroSlides = [
     {
@@ -58,6 +60,36 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [currentSlide]);
 
+  // Fetch news data
+  useEffect(() => {
+    const fetchNews = async () => {
+      try {
+        setLoadingNews(true);
+        const response = await fetch('/api/news?isFeatured=true&isPublished=true');
+        const data = await response.json();
+        
+        if (data.success && data.news && Array.isArray(data.news)) {
+          // Get up to 3 featured news items, or fall back to latest 3 if no featured
+          let fetchedNews = data.news.filter((item: any) => item.isFeatured).slice(0, 3);
+          if (fetchedNews.length < 3) {
+            const additional = data.news
+              .filter((item: any) => !item.isFeatured)
+              .slice(0, 3 - fetchedNews.length);
+            fetchedNews = [...fetchedNews, ...additional];
+          }
+          
+          setNewsData(fetchedNews);
+        }
+      } catch (error) {
+        console.error('Error fetching news:', error);
+      } finally {
+        setLoadingNews(false);
+      }
+    };
+    
+    fetchNews();
+  }, []);
+
   const programs = [
     {
       icon: GraduationCap,      
@@ -76,14 +108,6 @@ export default function Home() {
       slug: 'ace-sped-ivet-hub',
     },    
     {
-      icon: Lightbulb,
-      title: 'ACE-SPED C-Code Studio',
-      description: 'Video Editing | Podcast Production | Content Creation and More...',
-      courses: 5,
-      color: 'from-purple-500 to-pink-500',
-      slug: 'ace-sped-c-code-studio',
-    },
-    {
       icon: Briefcase,      
       title: 'Sales & Repairs of Gadgets',
       description: 'Laptop Repair | Printers Repair | Computer Accessories and More...',
@@ -100,6 +124,7 @@ export default function Home() {
     { label: 'Global Partners', value: '150+', icon: Globe },
   ];
 
+  // Fallback news data (used when API is unavailable)
   const news = [
     {
       category: 'Research',
@@ -123,6 +148,51 @@ export default function Home() {
       image: Image3,
     },
   ];
+
+  // Helper function to get image
+  const getImage = (imagePath: string | null | undefined, index: number = 0) => {
+    const defaults = [Image1, Image2, Image3];
+    if (!imagePath) return defaults[index % defaults.length];
+    if (typeof imagePath === 'object') return imagePath;
+    if (typeof imagePath === 'string' && imagePath.startsWith('data:image/')) return imagePath;
+    if (typeof imagePath === 'string' && (imagePath.startsWith('/') || imagePath.startsWith('http://') || imagePath.startsWith('https://'))) {
+      return imagePath;
+    }
+    return defaults[index % defaults.length];
+  };
+
+  // Helper function to format category
+  const formatCategory = (category: string): string => {
+    return category.charAt(0) + category.slice(1).toLowerCase();
+  };
+
+  // Helper function to format date
+  const formatDate = (date: Date | null | undefined): string => {
+    if (!date) return '';
+    const d = new Date(date);
+    return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  };
+
+  // Helper function to check if image needs unoptimized prop
+  const isUnoptimizedImage = (imageSrc: string | any): boolean => {
+    if (typeof imageSrc === 'object') return false;
+    if (typeof imageSrc === 'string') {
+      return imageSrc.startsWith('data:') || 
+             imageSrc.startsWith('http://') || 
+             imageSrc.startsWith('https://');
+    }
+    return false;
+  };
+
+  // Use fetched news or fallback to static news
+  const displayNews = newsData.length > 0 ? newsData.map((item: any, index: number) => ({
+    category: formatCategory(item.category),
+    title: item.title,
+    excerpt: item.excerpt,
+    date: formatDate(item.publishedAt || item.createdAt),
+    image: getImage(item.image, index),
+    slug: item.slug,
+  })) : news;
 
   const features = [
     {
@@ -423,48 +493,52 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {news.map((item, index) => (
-              <div
-                key={index}
-                className="group bg-gray-50 dark:bg-gray-800 rounded-2xl overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-2"
-              >
-                <div className="relative aspect-video bg-linear-to-br from-green-500 to-emerald-600 flex items-center justify-center text-8xl">
-                  {typeof item.image === 'string' ? (
-                    item.image
-                  ) : (
+          {loadingNews ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500 dark:text-gray-400">Loading news...</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {displayNews.map((item, index) => (
+                <div
+                  key={index}
+                  onClick={() => item.slug && router.push(`/news/${item.slug}`)}
+                  className="group bg-gray-50 dark:bg-gray-800 rounded-2xl overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 cursor-pointer"
+                >
+                  <div className="relative aspect-video bg-linear-to-br from-green-500 to-emerald-600">
                     <Image 
                       src={item.image} 
                       alt={item.title}
                       fill
-                      className="object-cover"
+                      className="object-cover group-hover:scale-110 transition-transform duration-300"
+                      unoptimized={isUnoptimizedImage(item.image)}
                     />
-                  )}
-                </div>
-                <div className="p-6">
-                  <div className="flex items-center mb-3">
-                    <span className="px-3 py-1 bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300 rounded-full text-sm font-medium">
-                      {item.category}
-                    </span>
-                    <span className="ml-auto text-sm text-gray-500 dark:text-gray-500 flex items-center">
-                      <Calendar className="h-4 w-4 mr-1" />
-                      {item.date}
-                    </span>
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3 group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">
-                    {item.title}
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-400 mb-4">
-                    {item.excerpt}
-                  </p>
-                  <button className="text-green-600 dark:text-green-400 font-semibold flex items-center group-hover:gap-2 transition-all">
-                    Read More
-                    <ArrowRight className="ml-1 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                  </button>
+                  <div className="p-6">
+                    <div className="flex items-center mb-3">
+                      <span className="px-3 py-1 bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300 rounded-full text-sm font-medium">
+                        {item.category}
+                      </span>
+                      <span className="ml-auto text-sm text-gray-500 dark:text-gray-500 flex items-center">
+                        <Calendar className="h-4 w-4 mr-1" />
+                        {item.date}
+                      </span>
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3 group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">
+                      {item.title}
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-400 mb-4 line-clamp-3">
+                      {item.excerpt}
+                    </p>
+                    <button className="text-green-600 dark:text-green-400 font-semibold flex items-center group-hover:gap-2 transition-all">
+                      Read More
+                      <ArrowRight className="ml-1 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

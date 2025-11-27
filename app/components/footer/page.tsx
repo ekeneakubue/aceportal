@@ -171,7 +171,7 @@ export default function Footer() {
               })}
             </div>
             <div className="text-sm text-gray-400">
-              © 2025 ACE-SPED. All rights reserved. &nbsp;&nbsp; | &nbsp;&nbsp; &nbsp;Powered by <Link href="https://www.gigoplanet.com" className="text-green-500 hover:text-emerald-600 transition-colors">Gigoplanet Services Ltd.</Link>
+              © 2025 ACE-SPED. All rights reserved. 
             </div>
           </div>
         </div>

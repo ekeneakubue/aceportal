@@ -1,0 +1,58 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+
+// GET single program by slug (public endpoint)
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ slug: string }> }
+) {
+  try {
+    const { slug } = await params;
+    
+    const program = await prisma.program.findUnique({
+      where: { 
+        slug,
+        isActive: true,
+      },
+      include: {
+        service: {
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+            subtitle: true,
+            description: true,
+            icon: true,
+            color: true,
+            isActive: true,
+          },
+        },
+      },
+    });
+
+    if (!program) {
+      return NextResponse.json(
+        { success: false, message: 'Program not found' },
+        { status: 404 }
+      );
+    }
+
+    // Add empty courses array for backward compatibility
+    const programWithService = {
+      ...program,
+      courses: [],
+    };
+
+    return NextResponse.json({
+      success: true,
+      program: programWithService,
+    });
+  } catch (error) {
+    console.error('Error fetching program:', error);
+    return NextResponse.json(
+      { success: false, message: 'Failed to fetch program' },
+      { status: 500 }
+    );
+  }
+}
+

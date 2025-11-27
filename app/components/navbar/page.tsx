@@ -10,8 +10,8 @@ export default function Navbar() {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [isCoursesOpen, setIsCoursesOpen] = useState(false);
-  const [isMobileCoursesOpen, setIsMobileCoursesOpen] = useState(false);
+  const [isServicesOpen, setIsServicesOpen] = useState(false);
+  const [isMobileServicesOpen, setIsMobileServicesOpen] = useState(false);
   const [isAdmissionOpen, setIsAdmissionOpen] = useState(false);
   const [isMobileAdmissionOpen, setIsMobileAdmissionOpen] = useState(false);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
@@ -19,7 +19,7 @@ export default function Navbar() {
   
   // Refs for timeout management
   const admissionTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
-  const coursesTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+  const servicesTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
   const aboutTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -31,7 +31,7 @@ export default function Navbar() {
       window.removeEventListener('scroll', handleScroll);
       // Cleanup timeouts on unmount
       if (admissionTimeoutRef.current) clearTimeout(admissionTimeoutRef.current);
-      if (coursesTimeoutRef.current) clearTimeout(coursesTimeoutRef.current);
+      if (servicesTimeoutRef.current) clearTimeout(servicesTimeoutRef.current);
       if (aboutTimeoutRef.current) clearTimeout(aboutTimeoutRef.current);
     };
   }, []);
@@ -50,17 +50,17 @@ export default function Navbar() {
     }, 200); // 200ms delay before closing
   };
 
-  // Handle courses dropdown with delay
-  const handleCoursesMouseEnter = () => {
-    if (coursesTimeoutRef.current) {
-      clearTimeout(coursesTimeoutRef.current);
+  // Handle services dropdown with delay
+  const handleServicesMouseEnter = () => {
+    if (servicesTimeoutRef.current) {
+      clearTimeout(servicesTimeoutRef.current);
     }
-    setIsCoursesOpen(true);
+    setIsServicesOpen(true);
   };
 
-  const handleCoursesMouseLeave = () => {
-    coursesTimeoutRef.current = setTimeout(() => {
-      setIsCoursesOpen(false);
+  const handleServicesMouseLeave = () => {
+    servicesTimeoutRef.current = setTimeout(() => {
+      setIsServicesOpen(false);
     }, 200); // 200ms delay before closing
   };
 
@@ -80,19 +80,19 @@ export default function Navbar() {
 
   const navLinksBeforeAdmission: any[] = [];
 
-  const navLinksAfterCourses = [
+  const navLinksAfterServices = [
     { name: 'Research', href: '/research', icon: FaSearch },
     { name: 'News', href: '/news', icon: FaRegNewspaper },    
   ];
 
   const admissionDropdown = [
-    { name: 'Application', href: '/application', onClick: () => router.push('/application') },
+    { name: 'Application', href: '/services', onClick: () => router.push('/services') },
     { name: 'Admission List', href: '#admission-list', onClick: null },
   ];
 
-  const coursesDropdown = [
+  const servicesDropdown = [
+    { name: 'All Services', href: '/services', onClick: () => router.push('/services') },
     { name: 'All Programs', href: '/programs', onClick: () => router.push('/programs') },
-    { name: 'A to Z Courses', href: '/courses/all', onClick: () => router.push('/courses/all') },
   ];
 
   const aboutDropdown = [
@@ -217,31 +217,31 @@ export default function Navbar() {
               )}
             </div>
             
-            {/* Courses Dropdown */}
+            {/* Services Dropdown */}
             <div 
               className="relative"
-              onMouseEnter={handleCoursesMouseEnter}
-              onMouseLeave={handleCoursesMouseLeave}
+              onMouseEnter={handleServicesMouseEnter}
+              onMouseLeave={handleServicesMouseLeave}
             >
               <button className="flex items-center space-x-2 px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors group">
                 <FaBookReader className="h-4 w-4 group-hover:scale-110 transition-transform" />
-                <span className="font-medium">Courses</span>
-                <ChevronDown className={`h-4 w-4 transition-transform ${isCoursesOpen ? 'rotate-180' : ''}`} />
+                <span className="font-medium">Services</span>
+                <ChevronDown className={`h-4 w-4 transition-transform ${isServicesOpen ? 'rotate-180' : ''}`} />
               </button>
               
               {/* Dropdown Menu */}
-              {isCoursesOpen && (
+              {isServicesOpen && (
                 <div className="absolute top-full left-0 mt-0 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 animate-in fade-in slide-in-from-top-2 duration-200">
-                  {coursesDropdown.map((item) => (
+                  {servicesDropdown.map((item) => (
                     item.onClick ? (
                       <button
                         key={item.name}
                         onClick={() => {
                           item.onClick();
-                          if (coursesTimeoutRef.current) {
-                            clearTimeout(coursesTimeoutRef.current);
+                          if (servicesTimeoutRef.current) {
+                            clearTimeout(servicesTimeoutRef.current);
                           }
-                          setIsCoursesOpen(false);
+                          setIsServicesOpen(false);
                         }}
                         className="w-full text-left block px-4 py-3 text-gray-700 hover:bg-gray-100 transition-colors"
                       >
@@ -261,8 +261,8 @@ export default function Navbar() {
               )}
             </div>
 
-            {/* Links After Courses */}
-            {navLinksAfterCourses.map((link) => {
+            {/* Links After Services */}
+            {navLinksAfterServices.map((link) => {
               const Icon = link.icon;
               if (link.href.startsWith('/')) {
                 return (
@@ -402,29 +402,29 @@ export default function Navbar() {
                 )}
               </div>
               
-              {/* Mobile Courses Dropdown */}
+              {/* Mobile Services Dropdown */}
               <div>
                 <button
-                  onClick={() => setIsMobileCoursesOpen(!isMobileCoursesOpen)}
+                  onClick={() => setIsMobileServicesOpen(!isMobileServicesOpen)}
                   className="flex items-center justify-between w-full px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
                 >
                   <div className="flex items-center space-x-3">
                     <FaBookReader className="h-5 w-5" />
-                    <span className="font-medium">Courses</span>
+                    <span className="font-medium">Services</span>
                   </div>
-                  <ChevronDown className={`h-4 w-4 transition-transform ${isMobileCoursesOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`h-4 w-4 transition-transform ${isMobileServicesOpen ? 'rotate-180' : ''}`} />
                 </button>
                 
-                {isMobileCoursesOpen && (
+                {isMobileServicesOpen && (
                   <div className="mt-2 ml-4 space-y-2">
-                    {coursesDropdown.map((item) => (
+                    {servicesDropdown.map((item) => (
                       item.onClick ? (
                         <button
                           key={item.name}
                           onClick={() => {
                             item.onClick();
                             setIsOpen(false);
-                            setIsMobileCoursesOpen(false);
+                            setIsMobileServicesOpen(false);
                           }}
                           className="w-full text-left block px-4 py-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
                         >
@@ -437,7 +437,7 @@ export default function Navbar() {
                           className="block px-4 py-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
                           onClick={() => {
                             setIsOpen(false);
-                            setIsMobileCoursesOpen(false);
+                            setIsMobileServicesOpen(false);
                           }}
                         >
                           {item.name}
@@ -448,8 +448,8 @@ export default function Navbar() {
                 )}
               </div>
 
-              {/* Links After Courses */}
-              {navLinksAfterCourses.map((link) => {
+              {/* Links After Services */}
+              {navLinksAfterServices.map((link) => {
                 const Icon = link.icon;
                 if (link.href.startsWith('/')) {
                   return (
@@ -478,7 +478,7 @@ export default function Navbar() {
               })}
 
               <button 
-                onClick={() => router.push('/application')}
+                onClick={() => router.push('/services')}
                 className="w-full px-6 py-3 bg-linear-to-r from-green-600 to-emerald-600 text-white rounded-lg font-medium hover:shadow-lg transition-all"
               >
                 Apply Now

@@ -22,6 +22,7 @@ interface Course {
   requirements: any;
   careerPaths: any;
   isActive: boolean;
+  displayOrder: number;
   createdAt: string;
   updatedAt: string;
   program: {
@@ -64,6 +65,7 @@ export default function CoursesManagement() {
     requirements: [] as string[],
     careerPaths: [] as string[],
     isActive: true,
+    displayOrder: 0,
   });
 
   const [tempObjective, setTempObjective] = useState('');
@@ -72,6 +74,18 @@ export default function CoursesManagement() {
   const [tempCareerPath, setTempCareerPath] = useState('');
 
   const courseLevels = ['CERTIFICATE', 'DIPLOMA', 'BACHELORS', 'MASTERS', 'PHD', 'MASTERS_AND_PHD'];
+
+  const getLevelDisplayName = (level: string) => {
+    const levelMap: { [key: string]: string } = {
+      'CERTIFICATE': 'Certificate',
+      'DIPLOMA': 'Diploma',
+      'BACHELORS': 'Bachelors',
+      'MASTERS': 'Masters',
+      'PHD': 'Ph.D',
+      'MASTERS_AND_PHD': 'Ph.D/M.Sc.',
+    };
+    return levelMap[level] || level.replace(/_/g, ' ');
+  };
 
   useEffect(() => {
     fetchPrograms();
@@ -253,6 +267,7 @@ export default function CoursesManagement() {
       requirements: Array.isArray(course.requirements) ? course.requirements : [],
       careerPaths: Array.isArray(course.careerPaths) ? course.careerPaths : [],
       isActive: course.isActive,
+      displayOrder: course.displayOrder || 0,
     });
     setShowEditModal(true);
   };
@@ -277,6 +292,7 @@ export default function CoursesManagement() {
       requirements: [],
       careerPaths: [],
       isActive: true,
+      displayOrder: 0,
     });
     setSelectedCourse(null);
     setTempObjective('');
@@ -410,7 +426,7 @@ export default function CoursesManagement() {
                         <div className="text-sm text-gray-500 dark:text-gray-400">{course.slug}</div>
                       </td>
                       <td className="py-4 px-6 text-sm text-gray-600 dark:text-gray-400">{course.program.title}</td>
-                      <td className="py-4 px-6 text-sm text-gray-600 dark:text-gray-400">{course.level.replace(/_/g, ' ')}</td>
+                      <td className="py-4 px-6 text-sm text-gray-600 dark:text-gray-400">{getLevelDisplayName(course.level)}</td>
                       <td className="py-4 px-6">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                           course.isActive 
@@ -532,7 +548,7 @@ export default function CoursesManagement() {
                     >
                       {courseLevels.map((level) => (
                         <option key={level} value={level}>
-                          {level.replace(/_/g, ' ')}
+                          {getLevelDisplayName(level)}
                         </option>
                       ))}
                     </select>
@@ -555,13 +571,16 @@ export default function CoursesManagement() {
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Study Mode
                     </label>
-                    <input
-                      type="text"
-                      value={formData.studyMode}
+                    <select
+                      value={formData.studyMode || ''}
                       onChange={(e) => setFormData({ ...formData, studyMode: e.target.value })}
-                      placeholder="e.g., Full-time / Part-time / Online"
                       className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 dark:text-white"
-                    />
+                    >
+                      <option value="">Select Study Mode</option>
+                      <option value="Full Time">Full Time</option>
+                      <option value="Part Time">Part Time</option>
+                      <option value="Online">Online</option>
+                    </select>
                   </div>
 
                   <div>
@@ -575,6 +594,22 @@ export default function CoursesManagement() {
                       placeholder="e.g., ₦150,000"
                       className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 dark:text-white"
                     />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Display Order
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.displayOrder}
+                      onChange={(e) => setFormData({ ...formData, displayOrder: parseInt(e.target.value) || 0 })}
+                      placeholder="0"
+                      className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 dark:text-white"
+                    />
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      Lower numbers appear first. Default is 0.
+                    </p>
                   </div>
                 </div>
 

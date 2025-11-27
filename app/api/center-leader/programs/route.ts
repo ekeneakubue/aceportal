@@ -18,11 +18,20 @@ export async function GET(request: NextRequest) {
             level: true,
             isActive: true,
           },
+          orderBy: [
+            { displayOrder: 'asc' },
+            { createdAt: 'desc' },
+          ],
         },
       },
-      orderBy: {
-        createdAt: 'desc',
-      },
+      orderBy: [
+        {
+          displayOrder: 'asc',
+        },
+        {
+          createdAt: 'desc',
+        },
+      ],
     });
 
     return NextResponse.json({
@@ -51,14 +60,8 @@ export async function POST(request: NextRequest) {
       description,
       icon,
       color,
-      duration,
-      studyMode,
-      fee,
-      applicationDeadline,
-      requirements,
-      careerProspects,
-      thematicAreas,
-      services,
+      heroImage,
+      totalCourses,
       isActive,
     } = body;
 
@@ -82,9 +85,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Count courses for totalCourses
-    const totalCourses = 0;
-
     // Create program
     const program = await prisma.program.create({
       data: {
@@ -94,15 +94,8 @@ export async function POST(request: NextRequest) {
         description,
         icon: icon || null,
         color: color || null,
-        duration: duration || null,
-        studyMode: studyMode || null,
-        totalCourses,
-        fee: fee || null,
-        applicationDeadline: applicationDeadline || null,
-        requirements: requirements || null,
-        careerProspects: careerProspects || null,
-        thematicAreas: thematicAreas || null,
-        services: services || null,
+        heroImage: heroImage || null,
+        totalCourses: totalCourses !== undefined ? totalCourses : 0,
         isActive: isActive !== undefined ? isActive : true,
       },
       include: {

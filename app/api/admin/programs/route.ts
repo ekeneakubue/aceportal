@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 // GET all programs
 export async function GET(request: NextRequest) {
@@ -10,19 +8,22 @@ export async function GET(request: NextRequest) {
     
     const programs = await prisma.program.findMany({
       include: {
-        courses: {
+        service: {
           select: {
             id: true,
             title: true,
             slug: true,
-            level: true,
-            isActive: true,
           },
         },
       },
-      orderBy: {
-        createdAt: 'desc',
-      },
+      orderBy: [
+        {
+          displayOrder: 'asc',
+        },
+        {
+          createdAt: 'desc',
+        },
+      ],
     });
 
     return NextResponse.json({
@@ -47,25 +48,97 @@ export async function POST(request: NextRequest) {
     const {
       title,
       slug,
-      subtitle,
-      description,
-      icon,
-      color,
+      level,
       duration,
       studyMode,
       fee,
-      applicationDeadline,
+      brochure,
+      overview,
+      objectives,
+      curriculum,
       requirements,
-      careerProspects,
-      thematicAreas,
-      services,
+      careerPaths,
+      serviceId,
+      displayOrder,
       isActive,
     } = body;
 
-    // Validate required fields
-    if (!title || !slug || !description) {
+    // Validate all required fields
+    if (!title || !slug || !level || !overview) {
       return NextResponse.json(
-        { success: false, message: 'Title, slug, and description are required' },
+        { success: false, message: 'Title, slug, level, and overview are required' },
+        { status: 400 }
+      );
+    }
+    
+    if (!duration) {
+      return NextResponse.json(
+        { success: false, message: 'Duration is required' },
+        { status: 400 }
+      );
+    }
+    
+    if (!studyMode) {
+      return NextResponse.json(
+        { success: false, message: 'Study mode is required' },
+        { status: 400 }
+      );
+    }
+    
+    if (!fee) {
+      return NextResponse.json(
+        { success: false, message: 'Fee is required' },
+        { status: 400 }
+      );
+    }
+    
+    if (!brochure) {
+      return NextResponse.json(
+        { success: false, message: 'Brochure is required' },
+        { status: 400 }
+      );
+    }
+    
+    if (!serviceId) {
+      return NextResponse.json(
+        { success: false, message: 'Service is required' },
+        { status: 400 }
+      );
+    }
+    
+    if (!objectives || !Array.isArray(objectives) || objectives.length === 0) {
+      return NextResponse.json(
+        { success: false, message: 'At least one learning objective is required' },
+        { status: 400 }
+      );
+    }
+    
+    if (!curriculum || !Array.isArray(curriculum) || curriculum.length === 0) {
+      return NextResponse.json(
+        { success: false, message: 'At least one curriculum module is required' },
+        { status: 400 }
+      );
+    }
+    
+    if (!requirements || !Array.isArray(requirements) || requirements.length === 0) {
+      return NextResponse.json(
+        { success: false, message: 'At least one requirement is required' },
+        { status: 400 }
+      );
+    }
+    
+    if (!careerPaths || !Array.isArray(careerPaths) || careerPaths.length === 0) {
+      return NextResponse.json(
+        { success: false, message: 'At least one career path is required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate level enum
+    const validLevels = ['CERTIFICATE', 'DIPLOMA', 'BACHELORS', 'MASTERS', 'PHD', 'MASTERS_AND_PHD'];
+    if (!validLevels.includes(level)) {
+      return NextResponse.json(
+        { success: false, message: `Invalid level. Must be one of: ${validLevels.join(', ')}` },
         { status: 400 }
       );
     }
@@ -82,31 +155,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Count courses for totalCourses
-    const totalCourses = 0;
-
     // Create program
     const program = await prisma.program.create({
       data: {
         title,
         slug,
-        subtitle: subtitle || null,
-        description,
-        icon: icon || null,
-        color: color || null,
-        duration: duration || null,
-        studyMode: studyMode || null,
-        totalCourses,
-        fee: fee || null,
-        applicationDeadline: applicationDeadline || null,
-        requirements: requirements || null,
-        careerProspects: careerProspects || null,
-        thematicAreas: thematicAreas || null,
-        services: services || null,
+        level,
+        duration,
+        studyMode,
+        fee,
+        brochure,
+        overview,
+        objectives,
+        curriculum,
+        requirements,
+        careerPaths,
+        serviceId,
+        displayOrder: displayOrder !== undefined ? displayOrder : 0,
         isActive: isActive !== undefined ? isActive : true,
-      },
-      include: {
-        courses: true,
       },
     });
 
@@ -117,11 +183,19 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error creating program:', error);
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      meta: error.meta,
+      stack: error.stack,
+    });
     return NextResponse.json(
       { 
         success: false, 
         message: 'Failed to create program',
-        error: error.message || 'Unknown error'
+        error: error.message || 'Unknown error',
+        code: error.code || 'UNKNOWN',
+        details: process.env.NODE_ENV === 'development' ? error.meta : undefined,
       },
       { status: 500 }
     );

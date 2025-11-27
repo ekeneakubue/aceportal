@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import AdminLayout from '../components/AdminLayout';
 import { 
   GraduationCap, Plus, Search, Edit, Trash2, 
-  X, Check, AlertCircle, Filter
+  X, Check, AlertCircle, Filter, Upload, FileText
 } from 'lucide-react';
 
 interface Course {
@@ -16,12 +16,14 @@ interface Course {
   duration: string | null;
   studyMode: string | null;
   fee: string | null;
+  brochure: string | null;
   overview: string;
   objectives: any;
   curriculum: any;
   requirements: any;
   careerPaths: any;
   isActive: boolean;
+  displayOrder: number;
   createdAt: string;
   updatedAt: string;
   program: {
@@ -58,12 +60,14 @@ export default function CoursesManagement() {
     duration: '',
     studyMode: '',
     fee: '',
+    brochure: '',
     overview: '',
     objectives: [] as string[],
     curriculum: [] as string[],
     requirements: [] as string[],
     careerPaths: [] as string[],
     isActive: true,
+    displayOrder: 0,
   });
 
   const [tempObjective, setTempObjective] = useState('');
@@ -72,6 +76,18 @@ export default function CoursesManagement() {
   const [tempCareerPath, setTempCareerPath] = useState('');
 
   const courseLevels = ['CERTIFICATE', 'DIPLOMA', 'BACHELORS', 'MASTERS', 'PHD', 'MASTERS_AND_PHD'];
+
+  const getLevelDisplayName = (level: string) => {
+    const levelMap: { [key: string]: string } = {
+      'CERTIFICATE': 'Certificate',
+      'DIPLOMA': 'Diploma',
+      'BACHELORS': 'Bachelors',
+      'MASTERS': 'Masters',
+      'PHD': 'Ph.D',
+      'MASTERS_AND_PHD': 'Ph.D/M.Sc.',
+    };
+    return levelMap[level] || level.replace(/_/g, ' ');
+  };
 
   useEffect(() => {
     fetchPrograms();
@@ -247,12 +263,14 @@ export default function CoursesManagement() {
       duration: course.duration || '',
       studyMode: course.studyMode || '',
       fee: course.fee || '',
+      brochure: course.brochure || '',
       overview: course.overview,
       objectives: Array.isArray(course.objectives) ? course.objectives : [],
       curriculum: Array.isArray(course.curriculum) ? course.curriculum : [],
       requirements: Array.isArray(course.requirements) ? course.requirements : [],
       careerPaths: Array.isArray(course.careerPaths) ? course.careerPaths : [],
       isActive: course.isActive,
+      displayOrder: course.displayOrder || 0,
     });
     setShowEditModal(true);
   };
@@ -271,12 +289,14 @@ export default function CoursesManagement() {
       duration: '',
       studyMode: '',
       fee: '',
+      brochure: '',
       overview: '',
       objectives: [],
       curriculum: [],
       requirements: [],
       careerPaths: [],
       isActive: true,
+      displayOrder: 0,
     });
     setSelectedCourse(null);
     setTempObjective('');
@@ -316,10 +336,10 @@ export default function CoursesManagement() {
         <div className="mb-8 flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-              Manage Courses
+              Manage Programs
             </h1>
             <p className="text-gray-600 dark:text-gray-400">
-              Create, edit, and manage courses
+              Create, edit, and manage programs
             </p>
           </div>
           <button
@@ -410,7 +430,7 @@ export default function CoursesManagement() {
                         <div className="text-sm text-gray-500 dark:text-gray-400">{course.slug}</div>
                       </td>
                       <td className="py-4 px-6 text-sm text-gray-600 dark:text-gray-400">{course.program.title}</td>
-                      <td className="py-4 px-6 text-sm text-gray-600 dark:text-gray-400">{course.level.replace(/_/g, ' ')}</td>
+                      <td className="py-4 px-6 text-sm text-gray-600 dark:text-gray-400">{getLevelDisplayName(course.level)}</td>
                       <td className="py-4 px-6">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                           course.isActive 
@@ -532,7 +552,7 @@ export default function CoursesManagement() {
                     >
                       {courseLevels.map((level) => (
                         <option key={level} value={level}>
-                          {level.replace(/_/g, ' ')}
+                          {getLevelDisplayName(level)}
                         </option>
                       ))}
                     </select>
@@ -555,13 +575,16 @@ export default function CoursesManagement() {
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Study Mode
                     </label>
-                    <input
-                      type="text"
-                      value={formData.studyMode}
+                    <select
+                      value={formData.studyMode || ''}
                       onChange={(e) => setFormData({ ...formData, studyMode: e.target.value })}
-                      placeholder="e.g., Full-time / Part-time / Online"
                       className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 dark:text-white"
-                    />
+                    >
+                      <option value="">Select Study Mode</option>
+                      <option value="Full Time">Full Time</option>
+                      <option value="Part Time">Part Time</option>
+                      <option value="Online">Online</option>
+                    </select>
                   </div>
 
                   <div>
@@ -575,6 +598,22 @@ export default function CoursesManagement() {
                       placeholder="e.g., ₦150,000"
                       className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 dark:text-white"
                     />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Display Order
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.displayOrder}
+                      onChange={(e) => setFormData({ ...formData, displayOrder: parseInt(e.target.value) || 0 })}
+                      placeholder="0"
+                      className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 dark:text-white"
+                    />
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      Lower numbers appear first. Default is 0.
+                    </p>
                   </div>
                 </div>
 
@@ -761,6 +800,63 @@ export default function CoursesManagement() {
                       </span>
                     ))}
                   </div>
+                </div>
+
+                {/* Upload Brochure */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Upload Brochure
+                  </label>
+                  <div className="mt-1 flex items-center gap-4">
+                    <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                        <Upload className="w-8 h-8 mb-2 text-gray-500 dark:text-gray-400" />
+                        <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
+                          <span className="font-semibold">Click to upload</span> or drag and drop
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">PDF, DOC, DOCX (MAX. 10MB)</p>
+                      </div>
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept=".pdf,.doc,.docx"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            if (file.size > 10 * 1024 * 1024) {
+                              showMessage('error', 'File size must be less than 10MB');
+                              return;
+                            }
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              const base64String = reader.result as string;
+                              setFormData({ ...formData, brochure: base64String });
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
+                  {formData.brochure && (
+                    <div className="mt-2 flex items-center gap-2 p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                      <FileText className="h-5 w-5 text-green-600 dark:text-green-400" />
+                      <span className="text-sm text-green-800 dark:text-green-200">Brochure uploaded</span>
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, brochure: '' })}
+                        className="ml-auto text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
+                  {showEditModal && selectedCourse?.brochure && !formData.brochure && (
+                    <div className="mt-2 flex items-center gap-2 p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                      <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                      <span className="text-sm text-blue-800 dark:text-blue-200">Current brochure: {selectedCourse.brochure}</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex items-center">

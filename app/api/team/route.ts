@@ -29,12 +29,17 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      team,
+      team: team || [],
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching team:', error);
+    console.error('Error details:', error?.message, error?.stack);
     return NextResponse.json(
-      { success: false, message: 'Failed to fetch team' },
+      { 
+        success: false, 
+        message: 'Failed to fetch team',
+        error: error?.message || 'Unknown error'
+      },
       { status: 500 }
     );
   }

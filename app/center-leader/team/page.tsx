@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import CenterLeaderLayout from '../components/CenterLeaderLayout';
 import { 
   Users, Plus, Search, Edit, Trash2, Eye, 
-  X, Check, AlertCircle, Filter, Mail, Phone, Linkedin, Twitter, Award, Upload, Camera
+  X, Check, AlertCircle, Filter, Mail, Phone, Linkedin, Twitter, Award, Upload, Camera, User
 } from 'lucide-react';
 import Image from 'next/image';
 
@@ -308,6 +308,46 @@ export default function TeamManagement() {
     });
   };
 
+  // Helper function to get image
+  const getImage = (imagePath: string | null | undefined): string => {
+    if (!imagePath) return '';
+    
+    // If it's a base64 encoded image (starts with data:image/), return it directly
+    if (typeof imagePath === 'string' && imagePath.startsWith('data:image/')) {
+      return imagePath;
+    }
+    
+    // If it's a string path starting with /, it's a public path - use it directly
+    if (typeof imagePath === 'string' && imagePath.startsWith('/')) {
+      return imagePath;
+    }
+    
+    // If it's a full URL (http:// or https://), use it directly
+    if (typeof imagePath === 'string' && (imagePath.startsWith('http://') || imagePath.startsWith('https://'))) {
+      return imagePath;
+    }
+    
+    // If it's a relative path without leading slash, prepend /
+    if (typeof imagePath === 'string' && !imagePath.startsWith('http') && !imagePath.startsWith('data:')) {
+      return '/' + imagePath;
+    }
+    
+    // Return as-is for other cases
+    return imagePath || '';
+  };
+
+  // Helper function to check if image needs unoptimized prop
+  const isUnoptimizedImage = (imageSrc: string | null | undefined): boolean => {
+    if (!imageSrc) return false;
+    if (typeof imageSrc === 'string') {
+      // Base64 images or external URLs need unoptimized
+      return imageSrc.startsWith('data:') || 
+             imageSrc.startsWith('http://') || 
+             imageSrc.startsWith('https://');
+    }
+    return false;
+  };
+
   const handleAvatarUpload = (file: File) => {
     if (file.size > 5 * 1024 * 1024) {
       showMessage('error', 'File size must be less than 5MB');
@@ -445,8 +485,18 @@ export default function TeamManagement() {
                     <tr key={member.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <div className="h-10 w-10 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center mr-3">
-                            <Users className="h-5 w-5 text-green-600 dark:text-green-400" />
+                          <div className="h-10 w-10 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center mr-3 overflow-hidden relative flex-shrink-0">
+                            {member.image && getImage(member.image) ? (
+                              <Image
+                                src={getImage(member.image)}
+                                alt={member.name}
+                                fill
+                                className="object-cover rounded-full"
+                                unoptimized={isUnoptimizedImage(member.image)}
+                              />
+                            ) : (
+                              <User className="h-5 w-5 text-green-600 dark:text-green-400" />
+                            )}
                           </div>
                           <div>
                             <div className="text-sm font-medium text-gray-900 dark:text-white">
