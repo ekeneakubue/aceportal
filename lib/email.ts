@@ -1,6 +1,6 @@
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore - type declarations provided via dev dependency / runtime
-import nodemailer from 'nodemailer';
+import 'server-only';
+
+import type { Transporter } from 'nodemailer';
 
 interface AdmissionEmailParams {
   email: string;
@@ -11,41 +11,62 @@ interface AdmissionEmailParams {
   applicationNumber?: string | null;
 }
 
-let cachedTransporter: nodemailer.Transporter | null = null;
+type NodemailerModule = typeof import('nodemailer');
 
-const getTransporter = () => {
-  if (cachedTransporter) {
-    return cachedTransporter;
+let nodemailerPromise: Promise<NodemailerModule | null> | null = null;
+let transporterPromise: Promise<Transporter | null> | null = null;
+
+const loadNodemailer = async (): Promise<NodemailerModule | null> => {
+  if (!nodemailerPromise) {
+    nodemailerPromise = import('nodemailer').catch((error) => {
+      console.error('Failed to load nodemailer. Make sure it is installed.', error);
+      return null;
+    });
+  }
+  return nodemailerPromise;
+};
+
+const getTransporter = async (): Promise<Transporter | null> => {
+  if (transporterPromise) {
+    return transporterPromise;
   }
 
-  const host = process.env.SMTP_HOST;
-  const port = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : 587;
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
+  transporterPromise = (async () => {
+    const nodemailer = await loadNodemailer();
+    if (!nodemailer) return null;
 
-  if (!host || !user || !pass) {
-    console.warn(
-      'SMTP configuration missing (SMTP_HOST, SMTP_USER, SMTP_PASS). Skipping email send.'
-    );
-    return null;
-  }
+    const host = process.env.SMTP_HOST;
+    const port = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : 587;
+    const user = process.env.SMTP_USER;
+    const pass = process.env.SMTP_PASS;
 
-  cachedTransporter = nodemailer.createTransport({
-    host,
-    port,
-    secure: port === 465,
-    auth: {
-      user,
-      pass,
-    },
-  });
+    if (!host || !user || !pass) {
+      console.warn(
+        'SMTP configuration missing (SMTP_HOST, SMTP_USER, SMTP_PASS). Skipping email send.'
+      );
+      return null;
+    }
 
-  return cachedTransporter;
+    try {
+      return nodemailer.createTransport({
+        host,
+        port,
+        secure: port === 465,
+        auth: { user, pass },
+      });
+    } catch (error) {
+      console.error('Failed to create nodemailer transporter', error);
+      return null;
+    }
+  })();
+
+  return transporterPromise;
 };
 
 export async function sendAdmissionApprovedEmail(params: AdmissionEmailParams) {
-  const transporter = getTransporter();
+  const transporter = await getTransporter();
   if (!transporter) {
+    console.warn('Skipping email send because transporter is not available.');
     return;
   }
 
@@ -80,13 +101,16 @@ export async function sendAdmissionApprovedEmail(params: AdmissionEmailParams) {
     .replace(/\n/g, '<br/>')
     .replace('Congratulations! 🎉', '<strong>Congratulations! 🎉</strong>');
 
-  await transporter.sendMail({
-    from,
-    to: params.email,
-    subject,
-    text,
-    html: `<div style="font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; line-height: 1.6;">${html}</div>`,
-  });
+  try {
+    await transporter.sendMail({
+      from,
+      to: params.email,
+      subject,
+      text,
+      html: `<div style="font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; line-height: 1.6;">${html}</div>`,
+    });
+  } catch (error) {
+    console.error('Failed to send admission approval email', error);
+  }
 }
-
 
