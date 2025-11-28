@@ -87,7 +87,9 @@ export default function Navbar() {
 
   const admissionDropdown = [
     { name: 'Application', href: '/services', onClick: () => router.push('/services') },
-    { name: 'Admission List', href: '#admission-list', onClick: null },
+    { name: 'Admission List', href: '/admission-list', onClick: () => router.push('/admission-list') },
+    { name: 'Accept Admission', href: '/acceptance', onClick: () => router.push('/acceptance') },
+    { name: 'Admission Letter', href: '/admission-letter', onClick: () => router.push('/admission-letter') },
   ];
 
   const servicesDropdown = [

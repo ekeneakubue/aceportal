@@ -26,6 +26,11 @@ interface Program {
   createdAt: string;
   updatedAt: string;
   courses?: any[];
+  service?: {
+    id: string;
+    title: string;
+    slug: string;
+  } | null;
 }
 
 interface Service {

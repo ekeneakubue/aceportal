@@ -5,13 +5,12 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/app/components/navbar/page';
 import Footer from '@/app/components/footer/page';
-import Image1 from '@/public/images/news/1.jpg';
-import Image2 from '@/public/images/news/2.jpg';
-import Image3 from '@/public/images/news/3.jpg';
 import { 
   Calendar, ArrowRight, Search, Filter, 
   Clock, User, Tag, ChevronRight, Loader2
 } from 'lucide-react';
+
+const defaultNewsImages = ['/images/news/1.jpg', '/images/news/2.jpg', '/images/news/3.jpg'];
 
 interface NewsItem {
   id: string;
@@ -42,51 +41,27 @@ const formatDate = (date: Date | null | undefined): string => {
 
 // Helper function to get image
 const getImage = (imagePath: string | null | undefined, index: number = 0) => {
-  // If no image path, use default based on index
+  const fallback = defaultNewsImages[index % defaultNewsImages.length];
+
   if (!imagePath) {
-    const defaults = [Image1, Image2, Image3];
-    return defaults[index % defaults.length];
+    return fallback;
   }
-  
-  // If it's already an imported image object, return it
-  if (typeof imagePath === 'object') return imagePath;
-  
-  // If it's a base64 encoded image (starts with data:image/), return it directly
-  if (typeof imagePath === 'string' && imagePath.startsWith('data:image/')) {
+
+  if (typeof imagePath === 'object') {
     return imagePath;
   }
-  
-  // If it's a string path starting with /, it's a public path - use it directly
-  if (typeof imagePath === 'string' && imagePath.startsWith('/')) {
-    return imagePath;
-  }
-  
-  // If it's a full URL (http:// or https://), use it directly
-  if (typeof imagePath === 'string' && (imagePath.startsWith('http://') || imagePath.startsWith('https://'))) {
-    return imagePath;
-  }
-  
-  // If it's a string but not a path, try to match specific filenames
+
   if (typeof imagePath === 'string') {
-    const lowerPath = imagePath.toLowerCase();
-    // Match exact filenames (like "1.jpg", "news/1.jpg", etc.)
-    if (lowerPath.includes('/1.jpg') || lowerPath.endsWith('1.jpg') || lowerPath === '1') {
-      return Image1;
+    if (imagePath.startsWith('data:image/')) {
+      return imagePath;
     }
-    if (lowerPath.includes('/2.jpg') || lowerPath.endsWith('2.jpg') || lowerPath === '2') {
-      return Image2;
+    if (imagePath.startsWith('/') || imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+      return imagePath;
     }
-    if (lowerPath.includes('/3.jpg') || lowerPath.endsWith('3.jpg') || lowerPath === '3') {
-      return Image3;
-    }
-    // If it doesn't match known images but is a relative path, prepend /
-    if (!lowerPath.startsWith('/') && !lowerPath.startsWith('http') && !lowerPath.startsWith('data:')) {
-      return '/' + imagePath;
-    }
+    return imagePath.trim();
   }
-  
-  // Return as-is for other cases
-  return imagePath;
+
+  return fallback;
 };
 
 // Helper function to check if image needs unoptimized prop
@@ -144,7 +119,7 @@ export default function NewsPage() {
               : [],
         })) : [];
         console.log(`Transformed ${news.length} news items`);
-        console.log('News images:', news.map(n => ({ title: n.title, image: typeof n.image === 'string' ? n.image : 'imported' })));
+        console.log('News images:', news.map((n: NewsItem) => ({ title: n.title, image: typeof n.image === 'string' ? n.image : 'imported' })));
         setNewsData(news);
       } else {
         console.error('Failed to fetch news:', data.message || data.error || 'Unknown error');

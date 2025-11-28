@@ -12,7 +12,6 @@ export async function GET(
     const program = await prisma.program.findUnique({
       where: { 
         slug,
-        isActive: true,
       },
       include: {
         service: {
@@ -30,7 +29,7 @@ export async function GET(
       },
     });
 
-    if (!program) {
+    if (!program || !program.isActive) {
       return NextResponse.json(
         { success: false, message: 'Program not found' },
         { status: 404 }

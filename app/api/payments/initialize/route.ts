@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, amount } = body;
+    const { email, amount, metadata, callback_path } = body;
 
     if (!email) {
       return NextResponse.json(
@@ -62,10 +62,11 @@ export async function POST(request: NextRequest) {
 
     // Set callback URL - check if it's for skill application or regular application
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-    const { callback_path } = body;
-    const callbackUrl = callback_path 
+    const callbackUrl = callback_path
       ? `${baseUrl}${callback_path}?payment_callback=true`
       : `${baseUrl}/application?payment_callback=true`;
+
+    const hasCustomMetadata = metadata && typeof metadata === 'object' && Object.keys(metadata).length > 0;
     
     const requestBody = {
       email,
@@ -73,15 +74,20 @@ export async function POST(request: NextRequest) {
       currency: 'NGN',
       callback_url: callbackUrl,
       redirect_url: callbackUrl, // Paystack redirect URL for web payments
-      metadata: {
-        custom_fields: [
-          {
-            display_name: callback_path === '/skill-application' ? 'Skill Application Fee' : 'Application Fee',
-            variable_name: callback_path === '/skill-application' ? 'skill_application_fee' : 'application_fee',
-            value: callback_path === '/skill-application' ? 'Skill Application Processing Fee' : 'Application Processing Fee'
-          }
-        ]
-      }
+      metadata: hasCustomMetadata
+        ? metadata
+        : {
+            custom_fields: [
+              {
+                display_name: callback_path === '/skill-application' ? 'Skill Application Fee' : 'Application Fee',
+                variable_name: callback_path === '/skill-application' ? 'skill_application_fee' : 'application_fee',
+                value:
+                  callback_path === '/skill-application'
+                    ? 'Skill Application Processing Fee'
+                    : 'Application Processing Fee',
+              },
+            ],
+          },
     };
 
     console.log('Initializing Paystack transaction:', {

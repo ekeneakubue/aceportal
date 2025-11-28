@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { 
   ArrowRight, ArrowLeft, Check, Upload, X, User, Users, 
   GraduationCap, Briefcase, FileText, Camera,
-  Mail, Phone, MapPin, Calendar, BookOpen, CreditCard
+  Mail, Phone, MapPin, Calendar, BookOpen, CreditCard,
+  Info, AlertTriangle, XCircle, CheckCircle
 } from 'lucide-react';
 import { TbCurrencyNaira } from 'react-icons/tb';
 import Image from 'next/image';
@@ -365,6 +366,8 @@ const locationData: Record<string, Record<string, string[]>> = {
   },
 };
 
+const PAYMENT_STORAGE_KEY = 'acePaymentRecord';
+
 export default function ApplicationPage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState<ApplicationStep>('requirements');
@@ -378,6 +381,18 @@ export default function ApplicationPage() {
   const [programsLoading, setProgramsLoading] = useState(false);
   const [programsError, setProgramsError] = useState<string | null>(null);
   const [selectedProgram, setSelectedProgram] = useState<any | null>(null);
+  const [duplicateApplication, setDuplicateApplication] = useState<{ exists: boolean; applicationNumber: string | null }>({
+    exists: false,
+    applicationNumber: null,
+  });
+  const [duplicateCheckLoading, setDuplicateCheckLoading] = useState(false);
+  const [duplicateCheckError, setDuplicateCheckError] = useState<string | null>(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+const [alertModal, setAlertModal] = useState<{
+  title: string;
+  message: string;
+  variant: 'info' | 'success' | 'warning' | 'error';
+} | null>(null);
   
   const [formData, setFormData] = useState<ApplicationData>({
     email: '',
@@ -469,20 +484,28 @@ export default function ApplicationPage() {
     try {
       // Validate email
       if (!formData.email || formData.email.trim() === '') {
-        alert('Please fill in your email address before proceeding to payment');
+        openAlertModal(
+          'Email Required',
+          'Please fill in your email address before proceeding to payment.',
+          'warning'
+        );
         return;
       }
 
       // Validate email format
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(formData.email)) {
-        alert('Please enter a valid email address');
+        openAlertModal('Invalid Email Address', 'Please enter a valid email address.', 'warning');
         return;
       }
 
       const amountInNaira = getApplicationPriceInNaira();
       if (!amountInNaira || amountInNaira <= 0) {
-        alert('Invalid application fee amount. Please contact support.');
+        openAlertModal(
+          'Invalid Application Fee',
+          'The application fee amount is unavailable. Please contact support.',
+          'error'
+        );
         return;
       }
 
@@ -511,7 +534,11 @@ export default function ApplicationPage() {
 
           if (!response.ok || !data.success || !data.authorization_url) {
             console.error('Failed to initialize payment:', data);
-            alert(data.message || 'Failed to initialize payment. Please try again.');
+            openAlertModal(
+              'Payment Initialization Failed',
+              data.message || 'Failed to initialize payment. Please try again.',
+              'error'
+            );
             return;
           }
 
@@ -519,14 +546,26 @@ export default function ApplicationPage() {
           window.location.href = data.authorization_url;
         } catch (initError) {
           console.error('Error initializing Paystack payment:', initError);
-          alert('An error occurred while initializing payment. Please try again.');
+          openAlertModal(
+            'Payment Error',
+            'An error occurred while initializing payment. Please try again.',
+            'error'
+          );
         }
       } else {
-        alert('Unable to proceed with payment. Please try again.');
+        openAlertModal(
+          'Payment Unavailable',
+          'Unable to proceed with payment. Please try again.',
+          'error'
+        );
       }
     } catch (error: any) {
       console.error('Error in handlePaystackPayment:', error);
-      alert('An error occurred while processing your payment request. Please try again.');
+      openAlertModal(
+        'Payment Error',
+        'An error occurred while processing your payment request. Please try again.',
+        'error'
+      );
     }
   };
 
@@ -543,11 +582,42 @@ export default function ApplicationPage() {
   ];
 
   const currentStepIndex = steps.findIndex(s => s.id === currentStep);
+  const programStepIndex = steps.findIndex(step => step.id === 'program');
+
+  const openAlertModal = (
+    title: string,
+    message: string,
+    variant: 'info' | 'success' | 'warning' | 'error' = 'info'
+  ) => {
+    setAlertModal({ title, message, variant });
+  };
+
+  const duplicateWarningText = duplicateApplication.exists
+    ? `An application for ${formData.email || 'this email'} in ${formData.admissionSession || 'this session'} already exists${
+        duplicateApplication.applicationNumber ? ` (Ref: ${duplicateApplication.applicationNumber})` : ''
+      }. Please update the email address or choose another session before continuing.`
+    : '';
+
+  const isNextDisabled =
+    (currentStep === 'requirements' && !acceptedRequirements) || duplicateApplication.exists;
 
   const goToStep = (stepId: ApplicationStep) => {
+    const targetIndex = steps.findIndex(step => step.id === stepId);
+    if (
+      duplicateApplication.exists &&
+      targetIndex > programStepIndex
+    ) {
+      openAlertModal('Existing Application', duplicateWarningText, 'warning');
+      return;
+    }
+
     // On the requirements step, user must accept before navigating away
     if (currentStep === 'requirements' && stepId !== 'requirements' && !acceptedRequirements) {
-      alert("Please read and accept the requirements before proceeding.");
+      openAlertModal(
+        'Accept Requirements',
+        'Please read and accept the requirements before proceeding.',
+        'warning'
+      );
       return;
     }
 
@@ -559,7 +629,7 @@ export default function ApplicationPage() {
 
   const handleFileUpload = (field: keyof ApplicationData, file: File) => {
     if (file.size > 5 * 1024 * 1024) {
-      alert('File size must be less than 5MB');
+      openAlertModal('File Too Large', 'File size must be less than 5MB.', 'warning');
       return;
     }
 
@@ -575,6 +645,11 @@ export default function ApplicationPage() {
   };
 
   const handleNext = () => {
+    if (duplicateApplication.exists) {
+      openAlertModal('Existing Application', duplicateWarningText, 'warning');
+      return;
+    }
+
     if (currentStepIndex < steps.length - 1) {
       setCurrentStep(steps[currentStepIndex + 1].id);
       if (typeof window !== 'undefined') {
@@ -595,7 +670,6 @@ export default function ApplicationPage() {
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      // API call to submit application
       const response = await fetch('/api/applications/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -603,14 +677,21 @@ export default function ApplicationPage() {
       });
 
       if (response.ok) {
-        alert('Application submitted successfully!');
-        router.push('/');
-      } else {
-        alert('Failed to submit application');
+        setShowSuccessModal(true);
+        return;
       }
+
+      const errorData = await response.json().catch(() => null);
+      const errorMessage =
+        errorData?.message ||
+        (response.status === 409
+          ? 'You have already submitted an application for this session.'
+          : 'Failed to submit application.');
+
+      openAlertModal('Unable to Submit', errorMessage, 'error');
     } catch (error) {
       console.error('Error:', error);
-      alert('Error submitting application');
+      openAlertModal('Submission Error', 'An error occurred while submitting your application.', 'error');
     } finally {
       setLoading(false);
     }
@@ -671,6 +752,70 @@ export default function ApplicationPage() {
     fetchPrograms();
   }, []);
 
+  // Check if this email already has an application in the selected admission session
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const email = formData.email?.trim() || '';
+    const session = formData.admissionSession?.trim() || '';
+
+    if (!email || !session) {
+      setDuplicateApplication({ exists: false, applicationNumber: null });
+      setDuplicateCheckError(null);
+      setDuplicateCheckLoading(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    setDuplicateCheckLoading(true);
+    setDuplicateCheckError(null);
+
+    const handler = setTimeout(async () => {
+      try {
+        const params = new URLSearchParams({
+          email,
+          admissionSession: session,
+        });
+        const response = await fetch(`/api/applications/check?${params.toString()}`, {
+          signal: controller.signal,
+        });
+        const data = await response.json().catch(() => null);
+
+        if (!response.ok || !data?.success) {
+          if (controller.signal.aborted) return;
+          setDuplicateApplication({ exists: false, applicationNumber: null });
+          setDuplicateCheckError(
+            data?.message || 'Unable to verify if this email already has an application.'
+          );
+          setDuplicateCheckLoading(false);
+          return;
+        }
+
+        setDuplicateApplication({
+          exists: Boolean(data.exists),
+          applicationNumber: data.applicationNumber ?? null,
+        });
+        setDuplicateCheckError(null);
+      } catch (error: any) {
+        if (controller.signal.aborted) return;
+        console.error('Error checking existing application:', error);
+        setDuplicateApplication({ exists: false, applicationNumber: null });
+        setDuplicateCheckError(
+          error?.message || 'Unable to verify if this email already has an application.'
+        );
+      } finally {
+        if (!controller.signal.aborted) {
+          setDuplicateCheckLoading(false);
+        }
+      }
+    }, 500);
+
+    return () => {
+      clearTimeout(handler);
+      controller.abort();
+    };
+  }, [formData.email, formData.admissionSession]);
+
   // Helper to get the numeric application fee in Naira for Paystack
   const getApplicationPriceInNaira = (): number => {
     const fee = selectedProgram?.fee;
@@ -690,7 +835,21 @@ export default function ApplicationPage() {
     return `₦${amount.toLocaleString()}`;
   };
 
-  const applicationFeeDisplay = getApplicationFeeDisplay();
+  let applicationFeeDisplay = getApplicationFeeDisplay();
+  const persistedPaymentRef = typeof window !== 'undefined' ? localStorage.getItem(PAYMENT_STORAGE_KEY) : null;
+  if (persistedPaymentRef) {
+    try {
+      const stored = JSON.parse(persistedPaymentRef);
+      if (stored?.programChoice) {
+        const matchedProgram = programs.find((program) => program.title === stored.programChoice);
+        if (matchedProgram?.fee) {
+          applicationFeeDisplay = matchedProgram.fee;
+        }
+      }
+    } catch (error) {
+      console.error('Error parsing saved payment record for fee display:', error);
+    }
+  }
 
   const renderStepContent = () => {
     switch (currentStep) {
@@ -1285,6 +1444,22 @@ export default function ApplicationPage() {
                   <option value="2025/2026">2025/2026</option>
                   <option value="2026/2027">2026/2027</option>
                 </select>
+                {duplicateCheckLoading && (
+                  <p className="mt-2 text-xs text-blue-600 dark:text-blue-300">Checking existing applications...</p>
+                )}
+                {duplicateApplication.exists && (
+                  <div className="mt-2 text-sm text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
+                    An application for <strong>{formData.email || 'this email'}</strong> in{' '}
+                    <strong>{formData.admissionSession || 'this session'}</strong> already exists
+                    {duplicateApplication.applicationNumber ? ` (Ref: ${duplicateApplication.applicationNumber})` : ''}.
+                    Please use a different email address or choose another session before continuing.
+                  </div>
+                )}
+                {!duplicateApplication.exists && duplicateCheckError && (
+                  <p className="mt-2 text-xs text-yellow-600 dark:text-yellow-300">
+                    {duplicateCheckError}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -1901,10 +2076,12 @@ export default function ApplicationPage() {
         // Restore form data from sessionStorage if available
         const savedData = sessionStorage.getItem('aceApplicationData');
         const savedStep = sessionStorage.getItem('aceApplicationStep');
+        let restoredApplicantEmail = '';
         
         if (savedData) {
           try {
             const parsedData = JSON.parse(savedData);
+            restoredApplicantEmail = parsedData?.email || '';
             setFormData({
               ...parsedData,
               paymentReference: paymentRef,
@@ -1939,45 +2116,126 @@ export default function ApplicationPage() {
         setPaymentCompleted(true);
         
         // Save payment reference to localStorage for persistence
-        localStorage.setItem('acePaymentReference', paymentRef);
+        const paymentEmail = restoredApplicantEmail || formData.email || '';
+        try {
+          localStorage.setItem(
+            PAYMENT_STORAGE_KEY,
+            JSON.stringify({
+              reference: paymentRef,
+              email: paymentEmail,
+              timestamp: new Date().toISOString(),
+            })
+          );
+        } catch (storageError) {
+          console.error('Error storing payment record:', storageError);
+        }
         
         // Clean URL
         window.history.replaceState({}, '', window.location.pathname);
         
         // Show success message
-        alert('Payment successful! You can now submit your application.');
+        openAlertModal(
+          'Payment Successful',
+          'Payment successful! You can now submit your application.',
+          'success'
+        );
       }
     }
   }, []);
 
-  // Check if payment reference exists in formData (for persistence across page refreshes)
+  // Toggle payment completion based on reference value
   useEffect(() => {
     if (formData.paymentReference && formData.paymentReference.trim() !== '') {
       setPaymentCompleted(true);
     } else {
-      // Check localStorage for payment reference (persists across sessions)
-      if (typeof window !== 'undefined') {
-        const savedPaymentRef = localStorage.getItem('acePaymentReference');
-        if (savedPaymentRef) {
-          setFormData(prev => ({
-            ...prev,
-            paymentReference: savedPaymentRef,
-            paymentMethod: 'Paystack'
-          }));
-          setPaymentCompleted(true);
-        }
-      }
+      setPaymentCompleted(false);
     }
   }, [formData.paymentReference]);
 
-  // Save payment reference to localStorage when it's set
+  // Attempt to restore payment reference when email matches stored record
   useEffect(() => {
-    if (formData.paymentReference && formData.paymentReference.trim() !== '') {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('acePaymentReference', formData.paymentReference);
+    if (typeof window === 'undefined') return;
+    if (!formData.email || formData.email.trim() === '') return;
+
+    const savedRecordRaw = localStorage.getItem(PAYMENT_STORAGE_KEY);
+    if (!savedRecordRaw) return;
+
+    try {
+      const savedRecord = JSON.parse(savedRecordRaw);
+      if (!savedRecord?.reference || !savedRecord?.email) return;
+
+      const normalizedEmail = formData.email.trim().toLowerCase();
+      const savedEmail = String(savedRecord.email).trim().toLowerCase();
+
+      if (normalizedEmail === savedEmail) {
+        if (formData.paymentReference !== savedRecord.reference) {
+          setFormData(prev => ({
+            ...prev,
+            paymentReference: savedRecord.reference,
+            paymentMethod: 'Paystack',
+          }));
+        }
+        setPaymentCompleted(true);
+      } else if (formData.paymentReference) {
+        setFormData(prev => ({
+          ...prev,
+          paymentReference: '',
+        }));
       }
+    } catch (error) {
+      console.error('Error parsing saved payment record:', error);
+      localStorage.removeItem(PAYMENT_STORAGE_KEY);
     }
-  }, [formData.paymentReference]);
+  }, [formData.email]);
+
+  // Persist payment reference with associated email for future restores
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!formData.paymentReference || formData.paymentReference.trim() === '') return;
+
+    try {
+      localStorage.setItem(
+        PAYMENT_STORAGE_KEY,
+        JSON.stringify({
+          reference: formData.paymentReference.trim(),
+          email: formData.email || '',
+          timestamp: new Date().toISOString(),
+          programChoice: formData.programChoice || '',
+        })
+      );
+    } catch (error) {
+      console.error('Error saving payment record:', error);
+    }
+  }, [formData.paymentReference, formData.email, formData.programChoice]);
+
+  const alertVariantStyles = {
+    info: {
+      icon: Info,
+      accent: 'text-blue-600 dark:text-blue-300',
+      iconBg: 'bg-blue-100 dark:bg-blue-900/40',
+      border: 'border-blue-100 dark:border-blue-900/40',
+    },
+    success: {
+      icon: CheckCircle,
+      accent: 'text-green-600 dark:text-green-300',
+      iconBg: 'bg-green-100 dark:bg-green-900/40',
+      border: 'border-green-100 dark:border-green-900/40',
+    },
+    warning: {
+      icon: AlertTriangle,
+      accent: 'text-yellow-600 dark:text-yellow-300',
+      iconBg: 'bg-yellow-100 dark:bg-yellow-900/30',
+      border: 'border-yellow-100 dark:border-yellow-900/30',
+    },
+    error: {
+      icon: XCircle,
+      accent: 'text-red-600 dark:text-red-300',
+      iconBg: 'bg-red-100 dark:bg-red-900/30',
+      border: 'border-red-100 dark:border-red-900/30',
+    },
+  } as const;
+
+  const activeAlertStyle = alertModal ? alertVariantStyles[alertModal.variant] : null;
 
   return (
     <>
@@ -1993,13 +2251,20 @@ export default function ApplicationPage() {
               const Icon = step.icon;
               const isActive = step.id === currentStep;
               const isCompleted = index < currentStepIndex;
+              const stepDisabled = duplicateApplication.exists && index > programStepIndex;
               
               return (
                 <div key={step.id} className="flex items-center flex-1">
                   <button
                     type="button"
-                    onClick={() => goToStep(step.id)}
-                    className="flex flex-col items-center flex-1 focus:outline-none group"
+                    onClick={() => {
+                      if (stepDisabled) return;
+                      goToStep(step.id);
+                    }}
+                    disabled={stepDisabled}
+                    className={`flex flex-col items-center flex-1 focus:outline-none group ${
+                      stepDisabled ? 'cursor-not-allowed opacity-60' : ''
+                    }`}
                   >
                     <div
                       className={`w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all ${
@@ -2070,17 +2335,103 @@ export default function ApplicationPage() {
               )}
             </div>
           ) : (
-            <button
-              onClick={handleNext}
-              disabled={currentStep === 'requirements' && !acceptedRequirements}
-              className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:shadow-xl hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center font-semibold"
-            >
-              Next
-              <ArrowRight className="h-5 w-5 ml-2" />
-            </button>
+            <div className="flex flex-col items-end">
+              <button
+                onClick={handleNext}
+                disabled={isNextDisabled}
+                className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:shadow-xl hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center font-semibold"
+              >
+                Next
+                <ArrowRight className="h-5 w-5 ml-2" />
+              </button>
+              {duplicateApplication.exists && (
+                <p className="text-xs text-red-600 dark:text-red-400 mt-2 text-right">
+                  {duplicateWarningText}
+                </p>
+              )}
+              {!duplicateApplication.exists && currentStep === 'requirements' && !acceptedRequirements && (
+                <p className="text-xs text-red-600 dark:text-red-400 mt-2 text-right">
+                  Please read and accept the requirements before proceeding.
+                </p>
+              )}
+            </div>
           )}
         </div>
       </div>
+
+      {showSuccessModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg p-8 relative text-center border border-green-100 dark:border-green-800">
+            <div className="mx-auto w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center mb-6">
+              <Check className="h-8 w-8 text-green-600 dark:text-green-300" />
+            </div>
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              Application Submitted!
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6 leading-relaxed">
+              Thank you for applying. A confirmation email containing your application details has been sent to{' '}
+              <span className="font-semibold text-gray-900 dark:text-white">{formData.email || 'your email address'}</span>. Please keep it safe for your records.
+            </p>
+            <div className="bg-gray-50 dark:bg-gray-800/60 rounded-xl p-4 mb-6 text-left space-y-3 border border-gray-100 dark:border-gray-700">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-500 dark:text-gray-400">Applicant</span>
+                <span className="font-semibold text-gray-900 dark:text-white">
+                  {formData.firstname} {formData.surname}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-500 dark:text-gray-400">Program</span>
+                <span className="font-semibold text-gray-900 dark:text-white">
+                  {formData.programChoice || 'Not specified'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-500 dark:text-gray-400">Admission Session</span>
+                <span className="font-semibold text-gray-900 dark:text-white">
+                  {formData.admissionSession || 'Not specified'}
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                setShowSuccessModal(false);
+                router.push('/');
+              }}
+              className="w-full px-6 py-3 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold hover:shadow-lg hover:scale-[1.02] transition-all"
+            >
+              Go to Homepage
+            </button>
+            <button
+              onClick={() => setShowSuccessModal(false)}
+              className="mt-3 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+            >
+              Ok
+            </button>
+          </div>
+        </div>
+      )}
+
+      {alertModal && activeAlertStyle && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+          <div className={`bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md p-6 relative text-center border ${activeAlertStyle.border}`}>
+            <div className={`mx-auto w-14 h-14 rounded-full flex items-center justify-center mb-4 ${activeAlertStyle.iconBg}`}>
+              {React.createElement(activeAlertStyle.icon, { className: `h-7 w-7 ${activeAlertStyle.accent}` })}
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+              {alertModal.title}
+            </h3>
+            <p className="text-gray-600 dark:text-gray-300 mb-6 leading-relaxed">
+              {alertModal.message}
+            </p>
+            <button
+              onClick={() => setAlertModal(null)}
+              className="w-full px-5 py-3 rounded-xl bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900 font-semibold hover:shadow-lg hover:scale-[1.02] transition-all"
+            >
+              Ok
+            </button>
+          </div>
+        </div>
+      )}
 
         <Footer />
       </div>

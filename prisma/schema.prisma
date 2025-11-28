@@ -100,6 +100,9 @@ model Application {
   paymentMethod           String
   paymentReference        String
   paymentProof            String?
+  acceptanceFeePaid       Boolean  @default(false)
+  acceptancePaymentReference String? @unique
+  acceptancePaidAt        DateTime?
   
   // Application Status
   status                  ApplicationStatus @default(PENDING)
@@ -161,6 +164,11 @@ model Program {
   // Basic Information
   title       String
   slug        String   @unique
+  subtitle    String?
+  description String?  @db.Text
+  icon        String?
+  color       String?
+  heroImage   String?
   level       CourseLevel
   
   // Program Details
@@ -179,6 +187,7 @@ model Program {
   // Status
   isActive    Boolean  @default(true)
   displayOrder Int     @default(0) // For custom ordering
+  totalCourses Int     @default(0) // Count of courses in this program
   
   // Timestamps
   createdAt   DateTime @default(now())
@@ -187,12 +196,53 @@ model Program {
   // Relations
   serviceId   String?
   service     Service? @relation(fields: [serviceId], references: [id])
+  courses     Course[]
 
   @@index([slug])
   @@index([isActive])
   @@index([displayOrder])
   @@index([serviceId])
   @@map("programs")
+}
+
+model Course {
+  id          String   @id @default(cuid())
+  
+  // Basic Information
+  title       String
+  slug        String   @unique
+  level       CourseLevel
+  
+  // Course Details
+  duration    String?  // e.g., "6 Months", "18-24 Months"
+  studyMode   String?  // e.g., "Full-time / Part-time / Online"
+  fee         String?  // e.g., "₦150,000"
+  brochure    String?  // Brochure file path/URL (base64 or file path)
+  overview    String   @db.Text
+  
+  // Course Content (JSON arrays)
+  objectives  Json?    // Array of learning objective strings
+  curriculum  Json?    // Array of curriculum module strings
+  requirements Json?   // Array of requirement strings
+  careerPaths Json?    // Array of career path strings
+  
+  // Status
+  isActive    Boolean  @default(true)
+  displayOrder Int     @default(0) // For custom ordering
+  
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  programId   String
+  program     Program  @relation(fields: [programId], references: [id], onDelete: Cascade)
+
+  @@index([slug])
+  @@index([isActive])
+  @@index([displayOrder])
+  @@index([programId])
+  @@map("courses")
 }
 
 enum CourseLevel {

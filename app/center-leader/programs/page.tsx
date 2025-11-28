@@ -11,6 +11,7 @@ interface Program {
   id: string;
   title: string;
   slug: string;
+  level: string;
   subtitle: string | null;
   description: string;
   icon: string | null;
@@ -18,6 +19,7 @@ interface Program {
   heroImage: string | null;
   totalCourses: number;
   thematicAreas: any;
+  overview: string;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -38,11 +40,13 @@ export default function ProgramsManagement() {
   const [formData, setFormData] = useState({
     title: '',
     slug: '',
+    level: 'CERTIFICATE',
     subtitle: '',
     description: '',
     icon: '',
     color: 'from-green-500 to-emerald-500',
     heroImage: '',
+    overview: '',
     totalCourses: 0,
     isActive: true,
   });
@@ -192,11 +196,13 @@ export default function ProgramsManagement() {
     setFormData({
       title: program.title,
       slug: program.slug,
+      level: program.level || 'CERTIFICATE',
       subtitle: program.subtitle || '',
       description: program.description,
       icon: program.icon || '',
       color: program.color || 'from-green-500 to-emerald-500',
       heroImage: program.heroImage || '',
+      overview: program.overview || '',
       totalCourses: program.totalCourses || 0,
       isActive: program.isActive,
     });
@@ -212,11 +218,13 @@ export default function ProgramsManagement() {
     setFormData({
       title: '',
       slug: '',
+      level: 'CERTIFICATE',
       subtitle: '',
       description: '',
       icon: '',
       color: 'from-green-500 to-emerald-500',
       heroImage: '',
+      overview: '',
       totalCourses: 0,
       isActive: true,
     });
@@ -413,6 +421,25 @@ export default function ProgramsManagement() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Level *
+                    </label>
+                    <select
+                      required
+                      value={formData.level}
+                      onChange={(e) => setFormData({ ...formData, level: e.target.value })}
+                      className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-900 dark:text-white"
+                    >
+                      <option value="CERTIFICATE">Certificate</option>
+                      <option value="DIPLOMA">Diploma</option>
+                      <option value="BACHELORS">Bachelors</option>
+                      <option value="MASTERS">Masters</option>
+                      <option value="PHD">Ph.D</option>
+                      <option value="MASTERS_AND_PHD">Masters & Ph.D</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Subtitle
                     </label>
                     <input
@@ -485,6 +512,20 @@ export default function ProgramsManagement() {
                     rows={4}
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-900 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Overview *
+                  </label>
+                  <textarea
+                    required
+                    rows={4}
+                    value={formData.overview}
+                    onChange={(e) => setFormData({ ...formData, overview: e.target.value })}
+                    placeholder="Detailed summary shown on the program detail page"
                     className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-900 dark:text-white"
                   />
                 </div>

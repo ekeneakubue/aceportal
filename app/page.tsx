@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
+import Image, { StaticImageData } from 'next/image';
 import { useRouter } from 'next/navigation';
 import Navbar from './components/navbar/page';
 import Footer from './components/footer/page';
@@ -185,14 +185,23 @@ export default function Home() {
   };
 
   // Use fetched news or fallback to static news
-  const displayNews = newsData.length > 0 ? newsData.map((item: any, index: number) => ({
-    category: formatCategory(item.category),
-    title: item.title,
-    excerpt: item.excerpt,
-    date: formatDate(item.publishedAt || item.createdAt),
-    image: getImage(item.image, index),
-    slug: item.slug,
-  })) : news;
+  const displayNews: {
+    category: string;
+    title: string;
+    excerpt: string;
+    date: string;
+    image: string | StaticImageData;
+    slug?: string;
+  }[] = newsData.length > 0
+    ? newsData.map((item: any, index: number) => ({
+        category: formatCategory(item.category),
+        title: item.title,
+        excerpt: item.excerpt,
+        date: formatDate(item.publishedAt || item.createdAt),
+        image: getImage(item.image, index),
+        slug: item.slug,
+      }))
+    : news;
 
   const features = [
     {

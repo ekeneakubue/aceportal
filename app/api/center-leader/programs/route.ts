@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 // GET all programs
 export async function GET(request: NextRequest) {
@@ -61,14 +59,24 @@ export async function POST(request: NextRequest) {
       icon,
       color,
       heroImage,
+      level,
+      overview,
       totalCourses,
       isActive,
     } = body;
 
     // Validate required fields
-    if (!title || !slug || !description) {
+    if (!title || !slug || !description || !overview) {
       return NextResponse.json(
-        { success: false, message: 'Title, slug, and description are required' },
+        { success: false, message: 'Title, slug, description, and overview are required' },
+        { status: 400 }
+      );
+    }
+
+    const validLevels = ['CERTIFICATE', 'DIPLOMA', 'BACHELORS', 'MASTERS', 'PHD', 'MASTERS_AND_PHD'];
+    if (!level || !validLevels.includes(level)) {
+      return NextResponse.json(
+        { success: false, message: `Invalid level. Must be one of: ${validLevels.join(', ')}` },
         { status: 400 }
       );
     }
@@ -90,11 +98,13 @@ export async function POST(request: NextRequest) {
       data: {
         title,
         slug,
+        level,
         subtitle: subtitle || null,
         description,
         icon: icon || null,
         color: color || null,
         heroImage: heroImage || null,
+        overview,
         totalCourses: totalCourses !== undefined ? totalCourses : 0,
         isActive: isActive !== undefined ? isActive : true,
       },

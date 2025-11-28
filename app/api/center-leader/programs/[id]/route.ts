@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 // GET single program by ID
 export async function GET(
@@ -62,6 +60,8 @@ export async function PUT(
       icon,
       color,
       heroImage,
+      level,
+      overview,
       totalCourses,
       isActive,
     } = body;
@@ -105,11 +105,13 @@ export async function PUT(
       data: {
         ...(title && { title }),
         ...(slug && { slug }),
+        ...(level && { level }),
         ...(subtitle !== undefined && { subtitle: subtitle || null }),
         ...(description && { description }),
         ...(icon !== undefined && { icon: icon || null }),
         ...(color !== undefined && { color: color || null }),
         ...(heroImage !== undefined && { heroImage: heroImage || null }),
+        ...(overview && { overview }),
         ...(totalCourses !== undefined && { totalCourses: courseCount }),
         ...(isActive !== undefined && { isActive }),
       },

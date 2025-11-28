@@ -9,8 +9,8 @@ export async function GET(
   try {
     const { slug } = await params;
     
-    const service = await prisma.service.findUnique({
-      where: { 
+    const service = await prisma.service.findFirst({
+      where: {
         slug,
         isActive: true,
       },

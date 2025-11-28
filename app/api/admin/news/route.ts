@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 // GET all news
 export async function GET(request: NextRequest) {
@@ -117,7 +115,7 @@ export async function POST(request: NextRequest) {
         content: content.trim(),
         author: author.trim(),
         image: image.trim(),
-        tags: tags && Array.isArray(tags) && tags.length > 0 ? tags : null,
+        tags: tags && Array.isArray(tags) && tags.length > 0 ? tags : undefined,
         publishedAt: publishedAt ? new Date(publishedAt) : null,
         isPublished: isPublished !== undefined ? isPublished : false,
         isFeatured: isFeatured !== undefined ? isFeatured : false,
